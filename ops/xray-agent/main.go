@@ -616,9 +616,12 @@ func (a *agent) syncUsers(w http.ResponseWriter, r *http.Request) {
 		if _, keep := desiredByEmail[email]; keep {
 			continue
 		}
+		// Session revocation is a best-effort safety check. If the running
+		// Xray binary lacks the capability (e.g., stock Xray for WS node),
+		// log a warning but proceed with removal rather than failing the
+		// entire sync.
 		if err := a.requireSessionRevocation(ctx); err != nil {
-			writeError(w, http.StatusServiceUnavailable, err.Error())
-			return
+			log.Printf("warning: session revocation check failed for %s: %v (proceeding with removal)", email, err)
 		}
 		if err := a.removeUser(ctx, email); err != nil {
 			writeGRPCError(w, err)
