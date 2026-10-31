@@ -1318,6 +1318,9 @@ printf '%s\n' "$(date -u +%FT%TZ)" > "$STATE_DIR/install-completed-at"
 chmod 0600 "$STATE_DIR/install-completed-at"
 
 # Print credentials ONLY to the interactive terminal; do not tee secrets into log.
+# (/dev/tty 可能在极少数非标准终端环境下不可用，此时只提示凭据文件位置。)
+CRED_TTY=/dev/tty
+[[ -w $CRED_TTY ]] || CRED_TTY=/dev/null
 {
   printf '\n=======================================================\n'
   printf '  cdql/hysteria2 · Ubuntu/Debian 三协议安装完成\n'
@@ -1358,4 +1361,5 @@ chmod 0600 "$STATE_DIR/install-completed-at"
   printf '凭据文件：      %s（root 专用，转存后可删除）\n' "$CREDENTIALS_FILE"
   printf '安装状态：      %s\n' "$STATE_DIR"
   printf '=======================================================\n'
-} > /dev/tty
+} > "$CRED_TTY"
+[[ $CRED_TTY == /dev/null ]] && log "无交互终端，凭据未打印到屏幕，请查看：$CREDENTIALS_FILE"
