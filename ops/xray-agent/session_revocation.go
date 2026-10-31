@@ -29,7 +29,12 @@ func (a *agent) requireSessionRevocation(ctx context.Context) error {
 }
 
 func (a *agent) verifyRunningCoreRevocation(ctx context.Context) error {
+	// The WS agent uses "xray-ws" as the logical service name, not "xray".
+	// Check both to support both agent instances.
 	unit := a.services["xray"]
+	if unit == "" {
+		unit = a.services["xray-ws"]
+	}
 	if unit == "" {
 		return fmt.Errorf("xray service mapping missing")
 	}
