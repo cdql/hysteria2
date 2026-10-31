@@ -75,6 +75,7 @@ export default function CustomersPage() {
     displayName: "",
     password: "",
     notes: "",
+    planId: "",
   });
 
   useEffect(() => {
@@ -153,7 +154,13 @@ export default function CustomersPage() {
   ]);
 
   function openCreate() {
-    setCreateForm({ email: "", displayName: "", password: "", notes: "" });
+    setCreateForm({
+      email: "",
+      displayName: "",
+      password: "",
+      notes: "",
+      planId: "",
+    });
     setCreateError(null);
     setCreateOpen(true);
   }
@@ -181,14 +188,15 @@ export default function CustomersPage() {
             displayName: createForm.displayName.trim(),
             password: createForm.password,
             notes: createForm.notes.trim() || undefined,
+            initialPlanId: createForm.planId || undefined,
           },
         },
       );
       setCreateOpen(false);
       setFeedback({
-        msg: created.primaryAccessToken
-          ? `用户 ${created.email} 已创建，主访问令牌：${created.primaryAccessToken}`
-          : `用户 ${created.email} 已创建。`,
+        msg: created.provisionedAccess
+          ? `用户 ${created.email} 已创建并开通订阅。`
+          : `用户 ${created.email} 已创建（未开通套餐，订阅链接暂不可用）。`,
         kind: "success",
       });
       setRefreshKey((value) => value + 1);
@@ -526,6 +534,30 @@ export default function CustomersPage() {
               placeholder="管理员备注"
               rows={3}
             />
+          </label>
+          <label className="field">
+            <span className="fine-print">
+              开通套餐（选填，不选则仅创建账号，订阅链接不可用）
+            </span>
+            <select
+              className="control"
+              value={createForm.planId}
+              onChange={(event) =>
+                setCreateForm((form) => ({
+                  ...form,
+                  planId: event.target.value,
+                }))
+              }
+            >
+              <option value="">不立即开通</option>
+              {plans
+                .filter((plan) => plan.active)
+                .map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name}
+                  </option>
+                ))}
+            </select>
           </label>
         </form>
       </Drawer>

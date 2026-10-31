@@ -543,6 +543,11 @@ export default function CustomerDetailPage() {
                 </button>
               }
             >
+              {customer?.summary.activeGrantCount === 0 ? (
+                <div className="feedback error">
+                  该用户当前没有有效订阅，订阅链接暂时不可用。请先为其开通套餐或流量包。
+                </div>
+              ) : null}
               {access.identities.length ? (
                 <div className="admin-access-identities">
                   {access.identities.map((identity) => (
