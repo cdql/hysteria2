@@ -113,11 +113,16 @@ if [[ -f "$STATE_FILE" ]]; then
   log "发现上次安装记录，继续执行。面板域名：$PANEL_DOMAIN；管理员：$ADMIN_EMAIL。"
 else
   [[ ! -e "$APP_DIR" && ! -e "$STATE_DIR/node.yaml" ]] || die '检测到已有部署但没有本安装器状态文件。为保护数据拒绝覆盖。'
-  if command -v ufw >/dev/null 2>&1 && ufw status | grep -q '^Status: active'; then
-    die '检测到正在运行的 UFW。请在全新系统安装。'
+  # 本安装器最后会接管防火墙（nftables 默认 DROP），因此先停掉系统自带的防火墙。
+  # 很多云厂商的 Debian/Ubuntu 镜像默认启用了 UFW（通常是全放行），直接报错会让一键安装卡住。
+  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q '^Status: active'; then
+    warn '检测到 UFW 正在运行；本安装器将接管防火墙（nftables），现在停用 UFW。'
+    ufw disable >/dev/null 2>&1 || true
+    systemctl disable --now ufw >/dev/null 2>&1 || true
   fi
   if systemctl is-active --quiet firewalld 2>/dev/null; then
-    die '检测到正在运行的 firewalld。请在全新系统安装。'
+    warn '检测到 firewalld 正在运行；本安装器将接管防火墙（nftables），现在停用 firewalld。'
+    systemctl disable --now firewalld >/dev/null 2>&1 || true
   fi
   printf '\n==================================================\n'
   printf 'cdql/hysteria2 · Ubuntu/Debian 三协议一键安装\n'
@@ -469,7 +474,9 @@ LimitNOFILE=65535
 WantedBy=multi-user.target
 EOFSVC
   systemctl daemon-reload
-  systemctl enable --now xray
+  # 配置每次都会重写，用 restart 确保生效（enable --now 对已运行服务是空操作）。
+  systemctl enable xray
+  systemctl restart xray
   local i
   for ((i=1; i<=30; i++)); do
     if ss -lnt "( sport = :$REALITY_PORT )" | grep -q ":$REALITY_PORT "; then break; fi
@@ -507,12 +514,13 @@ stage_xray_ws() {
     chmod 0600 "$CREDENTIALS_FILE"
   fi
   export WS_PORT WS_PATH
-  install -d -m 0755 /var/log/xray-ws
+  # 注意：xray-ws.service 使用 ProtectSystem=strict（只读文件系统），不能写文件日志；
+  # 与主 xray 服务保持一致，只设 loglevel，日志走 journal。
   python3 - "$APP_DIR/ops/xray/vless-ws-server.json" > /etc/xray-ws/config.json <<'PYX'
 import json,os,sys
 with open(sys.argv[1],encoding='utf-8') as f:
     obj=json.load(f)
-obj['log']={'loglevel':'warning','access':'/var/log/xray-ws/access.log'}
+obj['log']={'loglevel':'warning'}
 inbound=obj['inbounds'][0]
 assert inbound['tag']=='vless-ws'
 inbound['port']=int(os.environ['WS_PORT'])
@@ -544,7 +552,10 @@ LimitNOFILE=65535
 WantedBy=multi-user.target
 EOFSVC
   systemctl daemon-reload
-  systemctl enable --now xray-ws
+  # 配置每次都会重写，必须 restart 确保运行中的实例加载新配置
+  #（enable --now 在服务已运行时是空操作，会导致端口与配置不一致）。
+  systemctl enable xray-ws
+  systemctl restart xray-ws
   local i
   for ((i=1; i<=30; i++)); do
     if ss -lnt "( sport = :$WS_PORT )" | grep -q "127.0.0.1:$WS_PORT "; then break; fi
@@ -552,8 +563,8 @@ EOFSVC
   done
   systemctl is-active --quiet xray-ws || { journalctl -u xray-ws -n 40 --no-pager; die 'xray-ws 服务未运行。'; }
   ss -lnt | grep -q "127.0.0.1:$WS_PORT " || die 'VLESS WS 本地监听端口未就绪。'
-  # WS 端口绝不能监听在公网地址上。
-  if ss -lnt "( sport = :$WS_PORT )" | grep -vq "127.0.0.1:$WS_PORT "; then
+  # WS 端口绝不能监听在公网地址上。（ss 表头不含地址，需跳过，否则误判）
+  if ss -lnt "( sport = :$WS_PORT )" | tail -n +2 | grep -vq "127.0.0.1:$WS_PORT "; then
     die 'VLESS WS 端口暴露在非本地地址，拒绝继续。'
   fi
   log "VLESS WS 本地节点已就绪：127.0.0.1:$WS_PORT 路径 $WS_PATH"

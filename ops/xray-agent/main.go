@@ -390,7 +390,7 @@ func parseServiceAllowlist(value string) (map[string]string, error) {
 		}
 		logicalName := strings.TrimSpace(parts[0])
 		unit := strings.TrimSpace(parts[1])
-		if logicalName != "xray" && logicalName != "hysteria2" {
+		if logicalName != "xray" && logicalName != "xray-ws" && logicalName != "hysteria2" {
 			return nil, fmt.Errorf("unsupported logical service %q", logicalName)
 		}
 		if !validSystemdUnit.MatchString(unit) {
