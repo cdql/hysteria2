@@ -5,10 +5,6 @@ export type PublicSiteInfo = {
   iconUrl: string;
   fontWeight: number;
   iconStrokeWidth: number;
-  registration: {
-    enabled: boolean;
-    inviteOnly: boolean;
-  };
 };
 
 export type PublicCatalogOffer = {
@@ -138,7 +134,6 @@ export async function getPublicSiteInfo(): Promise<PublicSiteInfo> {
       iconUrl: "/brand-icon.svg",
       fontWeight: 400,
       iconStrokeWidth: 1.5,
-      registration: { enabled: true, inviteOnly: false },
     }
   );
 }

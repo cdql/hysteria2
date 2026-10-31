@@ -69,7 +69,6 @@ test("private route groups all publish noindex and nofollow metadata", async () 
     "admin",
     "portal",
     "login",
-    "register",
     "forgot-password",
     "reset-password",
     "oauth",

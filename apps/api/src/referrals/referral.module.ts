@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { MemberOnboardingService } from './member-onboarding.service';
 import { ReferralService } from './referral.service';
 import {
   AdminReferralController,
@@ -10,7 +9,7 @@ import { EntitlementModule } from '../entitlement/entitlement.module';
 @Module({
   imports: [EntitlementModule],
   controllers: [PortalReferralController, AdminReferralController],
-  providers: [ReferralService, MemberOnboardingService],
-  exports: [ReferralService, MemberOnboardingService],
+  providers: [ReferralService],
+  exports: [ReferralService],
 })
 export class ReferralModule {}

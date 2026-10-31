@@ -26,18 +26,6 @@ export class LoginDto {
   password!: string;
 }
 
-export class RequestRegisterCodeDto {
-  @IsEmail({}, { message: '邮箱格式不正确，请检查后重试' })
-  email!: string;
-
-  @IsOptional()
-  @IsString()
-  @Matches(/^[A-HJ-NP-Z2-9]{8}$/i, {
-    message: '邀请码格式不正确，请填写 8 位邀请码',
-  })
-  inviteCode?: string;
-}
-
 export class AcknowledgeAnnouncementDto {
   @IsString()
   @Length(64, 64)
@@ -65,10 +53,6 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   smtpFrom?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  registrationEnabled?: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -312,32 +296,6 @@ export class OAuthExchangeDto {
   @IsString()
   @IsNotEmpty()
   code!: string;
-}
-
-export class RegisterDto {
-  @IsEmail({}, { message: '邮箱格式不正确，请检查后重试' })
-  email!: string;
-
-  @IsString()
-  @Length(6, 6)
-  code!: string;
-
-  @IsString()
-  @MinLength(8)
-  @MaxLength(72)
-  password!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(40)
-  displayName?: string;
-
-  @IsOptional()
-  @IsString()
-  @Matches(/^[A-HJ-NP-Z2-9]{8}$/i, {
-    message: '邀请码格式不正确，请填写 8 位邀请码',
-  })
-  inviteCode?: string;
 }
 
 export class CreateUserDto {

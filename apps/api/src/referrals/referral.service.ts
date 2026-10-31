@@ -10,7 +10,6 @@ import {
   OrderStatus,
   type Prisma,
 } from '@prisma/client';
-import { webPublicUrl } from '../common/public-url';
 import { pageResponse, parsePage, type PageQuery } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -102,7 +101,6 @@ export class ReferralService {
       ]);
     return {
       code: code?.code ?? null,
-      inviteUrl: code ? this.presentCode(code.code).inviteUrl : null,
       total,
       pending,
       rewarded,
@@ -262,27 +260,18 @@ export class ReferralService {
     input: {
       enabled: boolean;
       inviterRewardBasisPoints: number;
-      inviteOnlyRegistration?: boolean;
     },
     actorId: string,
   ) {
-    const current = await this.settings.getReferralConfig();
-    const inviteOnlyRegistration =
-      input.inviteOnlyRegistration ?? current.inviteOnlyRegistration;
-    if (inviteOnlyRegistration && !input.enabled) {
-      throw new BadRequestException('开启封车系统前，必须先开启邀请与奖励');
-    }
     const resolvedSettings = {
       enabled: input.enabled,
       inviterRewardBasisPoints: input.inviterRewardBasisPoints,
-      inviteOnlyRegistration,
     };
     await this.settings.setMany({
       'referral.enabled': String(input.enabled),
       'referral.inviterRewardBasisPoints': String(
         input.inviterRewardBasisPoints,
       ),
-      'registration.inviteOnly': String(inviteOnlyRegistration),
     });
     await this.prisma.auditLog.create({
       data: {
@@ -518,9 +507,10 @@ export class ReferralService {
   }
 
   private presentCode(code: string) {
+    // Self-service registration is removed, so invite codes no longer have a
+    // public signup URL; the code remains the member's stable identity.
     return {
       code,
-      inviteUrl: `${webPublicUrl()}/register?invite=${code}`,
     };
   }
 

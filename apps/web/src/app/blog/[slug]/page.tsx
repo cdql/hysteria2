@@ -193,14 +193,14 @@ export default async function ArticlePage({
             <section className="seo-article-cta">
               <div>
                 <span>准备开始使用？</span>
-                <strong>先查看适合自己的套餐，再完成注册。</strong>
+                <strong>先查看适合自己的套餐，再登录账户开始使用。</strong>
               </div>
               <div>
                 <Link className="ghost-button" href="/#plans">
                   查看套餐
                 </Link>
-                <Link className="action-button" href="/register">
-                  注册账户
+                <Link className="action-button" href="/login">
+                  登录账户
                 </Link>
               </div>
             </section>

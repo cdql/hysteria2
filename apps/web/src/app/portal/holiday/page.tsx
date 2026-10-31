@@ -394,7 +394,7 @@ export default function HolidayPage() {
                   )}
                   <p>
                     <strong>邀请奖励：</strong>
-                    活动期间通过你的邀请码注册的好友，首次外部充值后给你{" "}
+                    活动期间已与你建立邀请关系的好友，首次外部充值后给你{" "}
                     {formatMoney(c.config.inviteRewardCents ?? 500)}{" "}
                     余额，每位好友一次，充值金额最低10元（普通充值与活动充值均可）。现金奖励与抽奖次数分别计算，抽奖名额用完不影响现金返现。退款须追回对应现金和中奖奖励；余额不足转人工核验，不重新恢复资格。
                   </p>
@@ -419,7 +419,7 @@ export default function HolidayPage() {
                   </p>
                   <p>
                     <strong>抽奖规则：</strong>
-                    每笔成功活动订单送三次机会，不设个人三次上限，名额以付款确认页为准。活动期间好友通过你的邀请码注册，送你一次；好友首次成功充值再补两次，合计三次，重复充值不重复送邀请机会。邀请充值包含普通充值与活动充值。全站抽奖名额有限，耗尽后不再新增机会。奖品不放回抽取，概率随剩余库存变化；机会不保证中奖。中奖余额永久有效，普通商城及拼团订单不送购买机会。
+                    每笔成功活动订单送三次机会，不设个人三次上限，名额以付款确认页为准。活动期间好友首次成功充值送你抽奖机会，重复充值不重复送邀请机会。邀请充值包含普通充值与活动充值。全站抽奖名额有限，耗尽后不再新增机会。奖品不放回抽取，概率随剩余库存变化；机会不保证中奖。中奖余额永久有效，普通商城及拼团订单不送购买机会。
                   </p>
                   <p>
                     <strong>活动时间：</strong>
@@ -445,11 +445,9 @@ export default function HolidayPage() {
                     余额
                   </h2>
                   <p>
-                    好友注册送你 <strong>1 次抽奖</strong>，首次充值再送{" "}
-                    <strong>
-                      2 次 + {formatMoney(c.config.inviteRewardCents ?? 500)}
-                    </strong>
-                    。
+                    好友首次充值送你 <strong>抽奖机会</strong> 与{" "}
+                    <strong>{formatMoney(c.config.inviteRewardCents ?? 500)}</strong>
+                    余额奖励。
                   </p>
                 </div>
                 <Link className="action-button" href="/portal/referrals">

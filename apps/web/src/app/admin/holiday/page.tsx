@@ -374,7 +374,7 @@ export default function AdminHoliday() {
             <section className="holiday-card">
               <h2>抽奖奖池</h2>
               <p>
-                每笔完成的活动订单赠三次；邀请注册赠一次，好友首次充值后累计三次。名额受全站库存限制，奖池总额不得超过200元。
+                每笔完成的活动订单赠三次；好友首次充值后按规则累计赠送。名额受全站库存限制，奖池总额不得超过200元。
               </p>
               {form.config.prizes.map((p, i) => (
                 <div className="holiday-grid" key={i}>

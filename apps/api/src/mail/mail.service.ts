@@ -143,21 +143,6 @@ export class MailService {
     return (await this.settings.getSmtpConfig()).configured;
   }
 
-  async sendVerificationCode(email: string, code: string) {
-    await this.send({
-      to: email,
-      subject: 'Hysteria 2 注册验证码',
-      text: `你的注册验证码是 ${code}，10 分钟内有效。如果这不是你本人操作，请忽略本邮件。`,
-      html:
-        `<div style="font-family:system-ui,sans-serif;font-size:15px;color:#1a1a1a">` +
-        `<p>你的 Hysteria 2 注册验证码是：</p>` +
-        `<p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p>` +
-        `<p style="color:#666">10 分钟内有效。如果这不是你本人操作，请忽略本邮件。</p>` +
-        `</div>`,
-      devNote: `[DEV] Verification code for ${email}: ${code}`,
-    });
-  }
-
   async sendPasswordReset(email: string, resetUrl: string) {
     await this.send({
       to: email,
@@ -181,7 +166,7 @@ export class MailService {
       html:
         `<div style="font-family:system-ui,sans-serif;font-size:15px;color:#1a1a1a">` +
         `<p>这是一封来自 <b>Hysteria 2 控制台</b> 的测试邮件。</p>` +
-        `<p>收到本邮件说明 SMTP 配置正确，可以正常发送注册验证码。</p>` +
+        `<p>收到本邮件说明 SMTP 配置正确，可以正常发送系统邮件。</p>` +
         `</div>`,
       devNote: `[DEV] Test email requested for ${email} (SMTP not configured)`,
     });

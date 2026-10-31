@@ -16,7 +16,6 @@ import type { PaginatedResponse } from "@/lib/types";
 
 interface ReferralSummary {
   code: string | null;
-  inviteUrl: string | null;
   total: number;
   pending: number;
   rewarded: number;
@@ -69,7 +68,7 @@ const referralMetrics = [
   {
     key: "total",
     label: "已邀请",
-    footnote: "完成邮箱注册",
+    footnote: "已建立邀请关系",
     icon: "group",
   },
   {
@@ -191,7 +190,7 @@ export default function PortalReferralsPage() {
       <div className="referral-page-heading">
         <div>
           <h2>分享邀请，双方都有奖励</h2>
-          <p>好友完成邮箱注册并首次兑换套餐 CDK 后，奖励自动到账。</p>
+          <p>好友首次兑换套餐 CDK 后，奖励自动到账。</p>
         </div>
         <span className={`badge ${summary?.enabled ? "success" : "warn"}`}>
           {summary?.enabled ? "活动进行中" : "活动已暂停"}
@@ -224,7 +223,7 @@ export default function PortalReferralsPage() {
       </section>
 
       <Panel title="我的邀请入口" copy="邀请码长期有效，无需重复生成。">
-        {summary?.code && summary.inviteUrl ? (
+        {summary?.code ? (
           <div className="referral-invite-layout">
             <div className="referral-invite-primary">
               <div className="referral-code-row">
@@ -244,26 +243,6 @@ export default function PortalReferralsPage() {
                   复制邀请码
                 </button>
               </div>
-              <label className="referral-link-field">
-                <span className="fine-print">专属邀请链接</span>
-                <div className="referral-link-row">
-                  <input
-                    className="control mono"
-                    aria-label="专属邀请链接"
-                    readOnly
-                    value={summary.inviteUrl}
-                  />
-                  <button
-                    className="action-button referral-copy-button"
-                    type="button"
-                    disabled={!summary.enabled}
-                    onClick={() => void copy(summary.inviteUrl!, "邀请链接")}
-                  >
-                    <Icon name="content_copy" />
-                    复制链接
-                  </button>
-                </div>
-              </label>
               <div className="referral-settlement-note">
                 <Icon name="shield" />
                 <span>奖励在好友首次兑换套餐 CDK 后自动结算。</span>
@@ -319,7 +298,7 @@ export default function PortalReferralsPage() {
               <Icon name="group" />
             </span>
             <strong>还没有邀请记录</strong>
-            <span>好友通过你的链接完成邮箱注册后，记录会显示在这里。</span>
+            <span>有新的邀请记录时，会显示在这里。</span>
           </div>
         ) : (
           <DataTable

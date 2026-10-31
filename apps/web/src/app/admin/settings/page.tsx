@@ -87,7 +87,6 @@ interface SettingsResponse {
     fontWeight: number;
     iconStrokeWidth?: number;
   };
-  registrationEnabled: boolean;
   announcement: {
     enabled: boolean;
     title: string;
@@ -148,8 +147,6 @@ export default function AdminSettingsPage() {
   const [from, setFrom] = useState("");
   const [passSet, setPassSet] = useState(false);
   const [configured, setConfigured] = useState(false);
-  const [registrationEnabled, setRegistrationEnabled] = useState(true);
-  const [savingRegistration, setSavingRegistration] = useState(false);
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
   const [announcementContent, setAnnouncementContent] = useState<JSONContent>(
     EMPTY_ANNOUNCEMENT_DOCUMENT,
@@ -215,7 +212,6 @@ export default function AdminSettingsPage() {
     setFrom(data.smtp.from);
     setPassSet(data.smtp.passSet);
     setConfigured(data.smtp.configured);
-    setRegistrationEnabled(data.registrationEnabled);
     setAnnouncementEnabled(data.announcement.enabled);
     setAnnouncementContent(
       data.announcement.contentJson ??
@@ -340,27 +336,6 @@ export default function AdminSettingsPage() {
       setError(cause instanceof ApiError ? cause.message : "保存失败。");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function saveRegistration() {
-    if (!token) return;
-    setSavingRegistration(true);
-    setError(null);
-    try {
-      const data = await apiRequest<SettingsResponse>("/api/admin/settings", {
-        method: "PATCH",
-        token,
-        body: { registrationEnabled },
-      });
-      applySettings(data);
-      showToast(
-        registrationEnabled ? "会员自助注册已开放" : "会员自助注册已关闭",
-      );
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "保存失败。");
-    } finally {
-      setSavingRegistration(false);
     }
   }
 
@@ -748,7 +723,7 @@ export default function AdminSettingsPage() {
   return (
     <ConsoleShell
       title="系统设置"
-      subtitle="配置注册邮件 SMTP 与会员自助注册开关"
+      subtitle="配置邮件 SMTP、站点资料与会员公告"
       scope="Admin"
       navItems={adminNav}
       requireRole="admin"
@@ -914,49 +889,6 @@ export default function AdminSettingsPage() {
                 onClick={() => void saveSite()}
               >
                 {savingSite ? "保存中..." : "保存站点资料"}
-              </button>
-            </div>
-          </Panel>
-
-          <Panel
-            title="会员注册"
-            copy="关闭后，会员将无法通过邮箱验证码自助注册（登录与已注册账号不受影响）。"
-          >
-            <div className="setting-toggle-row">
-              <div className="setting-toggle-copy">
-                <strong>
-                  {registrationEnabled ? "允许新会员注册" : "暂停新会员注册"}
-                </strong>
-                <span>
-                  {registrationEnabled
-                    ? "访客可以通过邮箱验证码创建会员账号。"
-                    : "注册入口仍会显示，但无法提交新的注册申请。"}
-                </span>
-              </div>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={registrationEnabled}
-                  onChange={(event) =>
-                    setRegistrationEnabled(event.target.checked)
-                  }
-                />
-                <span className="toggle-track" aria-hidden="true">
-                  <span />
-                </span>
-                <span className="toggle-label">
-                  {registrationEnabled ? "已开启" : "已关闭"}
-                </span>
-              </label>
-            </div>
-            <div className="toolbar-actions">
-              <button
-                className="action-button"
-                type="button"
-                disabled={savingRegistration}
-                onClick={() => void saveRegistration()}
-              >
-                {savingRegistration ? "保存中..." : "保存注册设置"}
               </button>
             </div>
           </Panel>
@@ -1250,8 +1182,8 @@ export default function AdminSettingsPage() {
           </Panel>
 
           <Panel
-            title="注册邮件 SMTP"
-            copy="用于发送注册验证码。465 端口走 SSL，587 走 STARTTLS。密码/授权码不会回显，留空表示保持不变。"
+            title="邮件 SMTP"
+            copy="用于发送密码重置等系统邮件。465 端口走 SSL，587 走 STARTTLS。密码/授权码不会回显，留空表示保持不变。"
           >
             <div className="form-grid">
               <label className="field">

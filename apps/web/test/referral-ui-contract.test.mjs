@@ -17,7 +17,8 @@ const styles = await readFile(
 
 test("referral entry keeps copy actions aligned and exposes both rewards", () => {
   assert.match(page, /referral-code-row/);
-  assert.match(page, /referral-link-row/);
+  assert.doesNotMatch(page, /referral-link-row/);
+  assert.doesNotMatch(page, /inviteUrl/);
   assert.match(page, /referral-copy-button/);
   assert.match(page, /<Icon name="content_copy" \/>/);
   assert.match(page, /你获得/);
@@ -29,10 +30,6 @@ test("referral entry keeps copy actions aligned and exposes both rewards", () =>
   assert.match(
     styles,
     /\.referral-copy-button\s*\{[^}]*white-space:\s*nowrap;/s,
-  );
-  assert.match(
-    styles,
-    /\.referral-link-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s,
   );
 });
 

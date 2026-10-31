@@ -53,12 +53,12 @@ function ForgotPasswordForm() {
     <AuthShell active="reset">
       <h1 className="auth2-form-title">找回密码</h1>
       <p className="auth2-form-sub">
-        输入注册邮箱，我们会发送一条 30 分钟内有效的重置链接。
+        输入账户邮箱，我们会发送一条 30 分钟内有效的重置链接。
       </p>
       {complete ? (
         <div className="form-grid">
           <div className="feedback success" role="status">
-            如果该邮箱已注册，重置链接将在几分钟内发送，请同时检查垃圾邮件。
+            如果该邮箱已开通账户，重置链接将在几分钟内发送，请同时检查垃圾邮件。
           </div>
           <Link className="action-button" href="/login">
             返回登录
@@ -72,7 +72,7 @@ function ForgotPasswordForm() {
                 <Icon name="mail" />
               </span>
               <span className="auth2-field-body">
-                <span className="auth2-field-label">注册邮箱</span>
+                <span className="auth2-field-label">账户邮箱</span>
                 <input
                   type="email"
                   value={email}

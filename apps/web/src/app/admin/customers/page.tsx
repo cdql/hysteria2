@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ConsoleShell } from "@/components/console-shell";
 import { CustomerLink } from "@/components/customer-link";
 import { CustomSelect } from "@/components/custom-select";
 import { DataTable } from "@/components/data-table";
+import { Drawer } from "@/components/drawer";
 import { Icon } from "@/components/icon";
 import { MetricCard } from "@/components/metric-card";
 import { Panel } from "@/components/panel";
@@ -12,7 +13,11 @@ import { useAuth } from "@/components/auth-provider";
 import { apiRequest, ApiError } from "@/lib/api";
 import { adminNav } from "@/lib/copy";
 import { formatBytes, formatDateTime, formatMoney } from "@/lib/format";
-import type { PaginatedResponse, PlanRecord } from "@/lib/types";
+import type {
+  AdminCreateUserResponse,
+  PaginatedResponse,
+  PlanRecord,
+} from "@/lib/types";
 
 type Customer = {
   id: string;
@@ -58,6 +63,19 @@ export default function CustomersPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    msg: string;
+    kind: "success" | "error";
+  } | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createForm, setCreateForm] = useState({
+    email: "",
+    displayName: "",
+    password: "",
+    notes: "",
+  });
 
   useEffect(() => {
     if (!token) return;
@@ -134,6 +152,55 @@ export default function CustomersPage() {
     token,
   ]);
 
+  function openCreate() {
+    setCreateForm({ email: "", displayName: "", password: "", notes: "" });
+    setCreateError(null);
+    setCreateOpen(true);
+  }
+
+  function closeCreate() {
+    if (creating) return;
+    setCreateOpen(false);
+    setCreateError(null);
+  }
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || creating) return;
+    setCreating(true);
+    setCreateError(null);
+    setFeedback(null);
+    try {
+      const created = await apiRequest<AdminCreateUserResponse>(
+        "/api/admin/users",
+        {
+          method: "POST",
+          token,
+          body: {
+            email: createForm.email.trim(),
+            displayName: createForm.displayName.trim(),
+            password: createForm.password,
+            notes: createForm.notes.trim() || undefined,
+          },
+        },
+      );
+      setCreateOpen(false);
+      setFeedback({
+        msg: created.primaryAccessToken
+          ? `用户 ${created.email} 已创建，主访问令牌：${created.primaryAccessToken}`
+          : `用户 ${created.email} 已创建。`,
+        kind: "success",
+      });
+      setRefreshKey((value) => value + 1);
+    } catch (cause) {
+      setCreateError(
+        cause instanceof ApiError ? cause.message : "创建用户失败。",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const active = data.items.filter(
     (customer) => customer.status === "active",
   ).length;
@@ -155,17 +222,29 @@ export default function CustomersPage() {
       dataViewport
       toolbarMeta={<span className="badge info">{data.total} 位客户</span>}
       toolbarActions={
-        <button
-          className="toolbar-button"
-          type="button"
-          onClick={() => setRefreshKey((value) => value + 1)}
-        >
-          <Icon name="refresh" />
-          刷新
-        </button>
+        <>
+          <button
+            className="action-button"
+            type="button"
+            onClick={openCreate}
+          >
+            添加用户
+          </button>
+          <button
+            className="toolbar-button"
+            type="button"
+            onClick={() => setRefreshKey((value) => value + 1)}
+          >
+            <Icon name="refresh" />
+            刷新
+          </button>
+        </>
       }
     >
       {error ? <div className="feedback error">{error}</div> : null}
+      {feedback ? (
+        <div className={`feedback ${feedback.kind}`}>{feedback.msg}</div>
+      ) : null}
       <div className="page-stack admin-data-page">
         <div className="metric-grid admin-data-metrics">
           <MetricCard
@@ -298,7 +377,7 @@ export default function CustomersPage() {
             }}
             headers={[
               "客户",
-              "注册时间",
+              "创建时间",
               "状态",
               "有效权益",
               "剩余额度",
@@ -343,6 +422,113 @@ export default function CustomersPage() {
           />
         </Panel>
       </div>
+      <Drawer
+        open={createOpen}
+        onClose={closeCreate}
+        title="添加用户"
+        subtitle="创建会员账号，创建后将出现在客户列表中"
+        footer={
+          <div className="toolbar-actions">
+            <button
+              className="action-button"
+              type="submit"
+              form="customer-create-form"
+              disabled={
+                creating ||
+                !createForm.email.trim() ||
+                !createForm.displayName.trim() ||
+                createForm.password.length < 8
+              }
+            >
+              {creating ? "创建中..." : "创建用户"}
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={closeCreate}
+              disabled={creating}
+            >
+              取消
+            </button>
+          </div>
+        }
+      >
+        {createError ? (
+          <div className="feedback error">{createError}</div>
+        ) : null}
+        <form
+          id="customer-create-form"
+          className="form-grid"
+          onSubmit={handleCreate}
+        >
+          <label className="field">
+            <span className="fine-print">邮箱</span>
+            <input
+              className="control"
+              type="email"
+              value={createForm.email}
+              onChange={(event) =>
+                setCreateForm((form) => ({
+                  ...form,
+                  email: event.target.value,
+                }))
+              }
+              placeholder="user@example.com"
+              autoComplete="off"
+              required
+            />
+          </label>
+          <label className="field">
+            <span className="fine-print">显示名称</span>
+            <input
+              className="control"
+              value={createForm.displayName}
+              onChange={(event) =>
+                setCreateForm((form) => ({
+                  ...form,
+                  displayName: event.target.value,
+                }))
+              }
+              placeholder="客户显示名称"
+              autoComplete="off"
+              required
+            />
+          </label>
+          <label className="field">
+            <span className="fine-print">登录密码（至少 8 位）</span>
+            <input
+              className="control"
+              type="password"
+              value={createForm.password}
+              onChange={(event) =>
+                setCreateForm((form) => ({
+                  ...form,
+                  password: event.target.value,
+                }))
+              }
+              placeholder="设置登录密码"
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </label>
+          <label className="field">
+            <span className="fine-print">备注（选填）</span>
+            <textarea
+              className="control"
+              value={createForm.notes}
+              onChange={(event) =>
+                setCreateForm((form) => ({
+                  ...form,
+                  notes: event.target.value,
+                }))
+              }
+              placeholder="管理员备注"
+              rows={3}
+            />
+          </label>
+        </form>
+      </Drawer>
     </ConsoleShell>
   );
 }

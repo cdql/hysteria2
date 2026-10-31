@@ -12,11 +12,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CurrentPrincipal } from '../common/current-principal.decorator';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import type { SessionPrincipal } from '../common/auth.types';
-import {
-  LoginDto,
-  RegisterDto,
-  RequestRegisterCodeDto,
-} from '../contracts/http.dto';
+import { LoginDto } from '../contracts/http.dto';
 import { AuthService } from './auth.service';
 import { RequestPasswordResetDto, ResetPasswordDto } from './auth.dto';
 import { clearSessionCookies, setSessionCookies } from './session-cookie';
@@ -34,34 +30,6 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const session = await this.authService.login(body.email, body.password);
-    setSessionCookies(response, session.accessToken);
-    return this.withoutAccessToken(session);
-  }
-
-  // Sending verification codes is the abuse-prone step: 5 / minute / IP, on top
-  // of the per-email 60s cooldown enforced in the service.
-  @Post('auth/register/request-code')
-  @HttpCode(200)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  requestRegisterCode(@Body() body: RequestRegisterCodeDto) {
-    return this.authService.requestRegisterCode(body.email, body.inviteCode);
-  }
-
-  @Post('auth/register')
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  async register(
-    @Body() body: RegisterDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    const session = await this.authService.register({
-      email: body.email,
-      code: body.code,
-      password: body.password,
-      displayName: body.displayName,
-      inviteCode: body.inviteCode,
-    });
     setSessionCookies(response, session.accessToken);
     return this.withoutAccessToken(session);
   }

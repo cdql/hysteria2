@@ -9,11 +9,9 @@ import { useSite } from "./site-provider";
 
 export function AuthShell({
   active,
-  onModeChange,
   children,
 }: {
-  active: "login" | "register" | "reset";
-  onModeChange?: (mode: "login" | "register") => void;
+  active: "login" | "reset";
   children: ReactNode;
 }) {
   const site = useSite();
@@ -55,54 +53,19 @@ export function AuthShell({
           <div className="auth2-panel">
             {active !== "reset" ? (
               <div className="auth2-intro">
-                <span>{active === "login" ? "WELCOME BACK" : "JOIN SUXIN"}</span>
-                <h2>{active === "login" ? "欢迎回来" : "创建您的账户"}</h2>
-                <p>
-                  {active === "login"
-                    ? "登录后继续管理您的订阅与连接。"
-                    : "完成邮箱验证后即可开始使用。"}
-                </p>
+                <span>WELCOME BACK</span>
+                <h2>欢迎回来</h2>
+                <p>登录后继续管理您的订阅与连接。</p>
               </div>
             ) : null}
 
             <div className="auth2-tabs" role="tablist" aria-label="账户入口">
-              {onModeChange ? (
-                <>
-                  <button
-                    className={`auth2-tab${active === "login" ? " active" : ""}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={active === "login"}
-                    onClick={() => onModeChange("login")}
-                  >
-                    登录
-                  </button>
-                  <button
-                    className={`auth2-tab${active === "register" ? " active" : ""}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={active === "register"}
-                    onClick={() => onModeChange("register")}
-                  >
-                    注册
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    className={`auth2-tab${active === "login" ? " active" : ""}`}
-                    href="/login"
-                  >
-                    登录
-                  </Link>
-                  <Link
-                    className={`auth2-tab${active === "register" ? " active" : ""}`}
-                    href="/register"
-                  >
-                    注册
-                  </Link>
-                </>
-              )}
+              <Link
+                className={`auth2-tab${active === "login" ? " active" : ""}`}
+                href="/login"
+              >
+                登录
+              </Link>
             </div>
 
             <div className="auth2-form">{children}</div>

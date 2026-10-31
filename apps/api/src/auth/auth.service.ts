@@ -1,30 +1,22 @@
 import {
   BadRequestException,
-  ConflictException,
-  HttpException,
-  HttpStatus,
   Injectable,
   Logger,
-  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { compare, hash } from 'bcryptjs';
 import { CacheService } from '../cache/cache.service';
 import { type SessionPrincipal } from '../common/auth.types';
 import { webPublicUrl } from '../common/public-url';
 import { ControlPlaneStoreService } from '../domain/control-plane.store';
 import { MailService } from '../mail/mail.service';
-import { MemberOnboardingService } from '../referrals/member-onboarding.service';
-import { SettingsService } from '../settings/settings.service';
 
-const REGISTER_CODE_TTL_SECONDS = 10 * 60;
-const REGISTER_COOLDOWN_SECONDS = 60;
 const PASSWORD_RESET_COOLDOWN_SECONDS = 60;
 const PASSWORD_RESET_RESPONSE = {
   success: true,
-  message: '如果该邮箱已注册，重置链接将在几分钟内发送。',
+  message: '如果该邮箱已开通账户，重置链接将在几分钟内发送。',
 } as const;
 
 @Injectable()
@@ -36,8 +28,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly cache: CacheService,
     private readonly mail: MailService,
-    private readonly settings: SettingsService,
-    @Optional() private readonly onboarding?: MemberOnboardingService,
   ) {}
 
   async login(email: string, password: string) {
@@ -58,152 +48,14 @@ export class AuthService {
     return this.issueSession(user);
   }
 
-  async requestRegisterCode(rawEmail: string, inviteCode?: string) {
-    if (!(await this.settings.isRegistrationEnabled())) {
-      throw new BadRequestException('当前未开放注册，请联系管理员');
-    }
-
-    const email = this.normalizeEmail(rawEmail);
-
-    const existing = await this.store.findUserByEmail(email);
-    if (existing) {
-      throw new ConflictException('该邮箱已注册，请直接登录');
-    }
-
-    if (this.onboarding) {
-      await this.onboarding.validateRegistrationInvite(inviteCode);
-    } else if (await this.settings.isInviteOnlyRegistrationEnabled()) {
-      throw new BadRequestException('当前仅限邀请注册，请联系管理员');
-    }
-
-    const cooldown = await this.cache.get(`reg-cooldown:${email}`);
-    if (cooldown) {
-      throw new HttpException(
-        '验证码发送过于频繁，请稍后再试',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    const code = this.generateNumericCode();
-    await this.cache.set(`reg-code:${email}`, code, REGISTER_CODE_TTL_SECONDS);
-    await this.cache.set(
-      `reg-cooldown:${email}`,
-      '1',
-      REGISTER_COOLDOWN_SECONDS,
-    );
-
-    try {
-      await this.mail.sendVerificationCode(email, code);
-    } catch (error) {
-      await Promise.allSettled([
-        this.cache.del(`reg-code:${email}`),
-        this.cache.del(`reg-cooldown:${email}`),
-      ]);
-      throw error;
-    }
-
-    return {
-      success: true,
-      emailed: await this.mail.isConfigured(),
-      cooldownSeconds: REGISTER_COOLDOWN_SECONDS,
-    };
-  }
-
-  async register(input: {
-    email: string;
-    code: string;
-    password: string;
-    displayName?: string;
-    inviteCode?: string;
-  }) {
-    if (!(await this.settings.isRegistrationEnabled())) {
-      throw new BadRequestException('当前未开放注册，请联系管理员');
-    }
-
-    const email = this.normalizeEmail(input.email);
-
-    const existing = await this.store.findUserByEmail(email);
-    if (existing) {
-      throw new ConflictException('该邮箱已注册，请直接登录');
-    }
-
-    const expected = await this.cache.get(`reg-code:${email}`);
-    if (!expected) {
-      throw new BadRequestException('验证码已过期，请重新获取');
-    }
-    if (expected !== input.code.trim()) {
-      throw new BadRequestException('验证码错误');
-    }
-
-    const passwordHash = await hash(input.password, 10);
-    const displayName =
-      input.displayName?.trim() || email.split('@')[0] || email;
-
-    if (this.onboarding) {
-      await this.onboarding.createEmailMember({
-        email,
-        displayName,
-        passwordHash,
-        inviteCode: input.inviteCode,
-      });
-    } else {
-      await this.store.createUser({
-        email,
-        displayName,
-        passwordHash,
-        role: 'member',
-        status: 'active',
-      });
-    }
-
-    await this.cache.del(`reg-code:${email}`);
-    await this.cache.del(`reg-cooldown:${email}`);
-
-    const user = await this.store.findUserByEmail(email);
-    if (!user) {
-      throw new BadRequestException('注册失败，请重试');
-    }
-
-    return this.issueSession(user);
-  }
-
   async oauthLogin(input: { email: string; displayName: string }) {
     const email = this.normalizeEmail(input.email);
 
-    let user = await this.store.findUserByEmail(email);
+    // Self-service registration is removed: accounts are created by
+    // administrators only, so third-party login works for existing users.
+    const user = await this.store.findUserByEmail(email);
     if (!user) {
-      // First-time third-party login = registration; honor the open-reg toggle.
-      if (!(await this.settings.isRegistrationEnabled())) {
-        throw new BadRequestException('当前未开放注册，请联系管理员');
-      }
-      if (await this.settings.isInviteOnlyRegistrationEnabled()) {
-        throw new BadRequestException(
-          '当前仅限邀请注册，请使用邀请码完成邮箱注册',
-        );
-      }
-      const passwordHash = await hash(`${randomUUID()}${randomUUID()}`, 10);
-      const displayName =
-        input.displayName?.trim() || email.split('@')[0] || email;
-      if (this.onboarding) {
-        await this.onboarding.createOAuthMember({
-          email,
-          displayName,
-          passwordHash,
-        });
-      } else {
-        await this.store.createUser({
-          email,
-          displayName,
-          passwordHash,
-          role: 'member',
-          status: 'active',
-        });
-      }
-      user = await this.store.findUserByEmail(email);
-    }
-
-    if (!user) {
-      throw new BadRequestException('第三方登录失败，请重试');
+      throw new BadRequestException('该邮箱尚未开通账户，请联系管理员');
     }
     if (user.status !== 'active') {
       throw new UnauthorizedException('Account is not active');
@@ -340,11 +192,6 @@ export class AuthService {
 
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
-  }
-
-  private generateNumericCode() {
-    // 6-digit, zero-padded, cryptographically random.
-    return String(randomInt(0, 1_000_000)).padStart(6, '0');
   }
 
   private hashResetToken(token: string) {

@@ -29,7 +29,6 @@ export class AdminSettingsController {
     const branding = await this.settings.getPortalBranding();
     const site = await this.settings.getSiteInfo();
     const tutorial = await this.settings.getTutorialConfig();
-    const registrationEnabled = await this.settings.isRegistrationEnabled();
     const announcement = await this.settings.getAnnouncementConfig();
     const anniversaryGift = await this.settings.getAnniversaryGiftConfig(true);
     const epay = await this.settings.getEpayConfig();
@@ -63,7 +62,6 @@ export class AdminSettingsController {
       branding,
       site,
       tutorial,
-      registrationEnabled,
       announcement,
       anniversaryGift,
       payment: {
@@ -96,9 +94,6 @@ export class AdminSettingsController {
     if (body.smtpPass) updates['smtp.pass'] = body.smtpPass;
     if (body.smtpFrom !== undefined)
       updates['smtp.from'] = body.smtpFrom.trim();
-    if (body.registrationEnabled !== undefined) {
-      updates['registration.enabled'] = String(body.registrationEnabled);
-    }
     if (body.announcementEnabled !== undefined) {
       updates['announcement.enabled'] = String(body.announcementEnabled);
     }

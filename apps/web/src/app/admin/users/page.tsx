@@ -604,7 +604,7 @@ export default function AdminUsersPage() {
     }
     if (
       !window.confirm(
-        "确认永久删除该账户？登录、订阅和未使用权益会立即失效，原邮箱可重新注册；历史订单、退款和审计记录将脱敏保留。",
+        "确认永久删除该账户？登录、订阅和未使用权益会立即失效，原邮箱可由管理员重新建档；历史订单、退款和审计记录将脱敏保留。",
       )
     ) {
       return;
@@ -620,7 +620,7 @@ export default function AdminUsersPage() {
       });
       forceClose();
       setFeedback({
-        msg: `${user.displayName} 的账户已删除，原邮箱现在可以重新注册。`,
+        msg: `${user.displayName} 的账户已删除，原邮箱现在可由管理员重新建档。`,
         kind: "success",
       });
       await load();
@@ -736,7 +736,7 @@ export default function AdminUsersPage() {
           <DataTable
             headers={[
               "用户",
-              "注册时间",
+              "创建时间",
               "角色",
               "状态",
               "用户倍率",

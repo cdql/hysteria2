@@ -14,7 +14,7 @@ test("customer account deletion requires two confirmations and releases the emai
   for (const page of [customerDetail, userManagement]) {
     assert.match(page, /window\.prompt\(/);
     assert.match(page, /window\.confirm\(/);
-    assert.match(page, /原邮箱可重新注册/);
+    assert.match(page, /原邮箱可由管理员重新建档/);
     assert.match(page, /method:\s*"DELETE"/);
     assert.match(page, /confirmationEmail/);
     assert.match(page, /<Icon name="trash" \/>/);

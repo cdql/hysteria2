@@ -138,7 +138,7 @@ export function HomepageExperience({
             <p className="ppanel-generated-copy ppanel-hero-description">
               {description}
             </p>
-            <Link className="ppanel-start-link" href="/register">
+            <Link className="ppanel-start-link" href="/login">
               <HoverBorderGradient
                 as="span"
                 containerClassName="ppanel-start-button"

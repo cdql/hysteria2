@@ -1,4 +1,4 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { compare, hashSync } from 'bcryptjs';
 import { AuthService } from './auth.service';
@@ -38,7 +38,6 @@ describe('AuthService sessions', () => {
       jwt as never,
       cache as never,
       mail as never,
-      {} as never,
     );
     return { service, store, mail };
   }
@@ -94,7 +93,7 @@ describe('AuthService sessions', () => {
 
     expect(response).toEqual({
       success: true,
-      message: '如果该邮箱已注册，重置链接将在几分钟内发送。',
+      message: '如果该邮箱已开通账户，重置链接将在几分钟内发送。',
     });
     expect(store.issuePasswordResetToken).toHaveBeenCalledTimes(1);
     const [issued] = store.issuePasswordResetToken.mock.calls[0] as unknown as [
@@ -117,112 +116,13 @@ describe('AuthService sessions', () => {
 
     expect(response).toEqual({
       success: true,
-      message: '如果该邮箱已注册，重置链接将在几分钟内发送。',
+      message: '如果该邮箱已开通账户，重置链接将在几分钟内发送。',
     });
     expect(store.issuePasswordResetToken).not.toHaveBeenCalled();
     expect(mail.sendPasswordReset).not.toHaveBeenCalled();
   });
 
-  it('clears the registration code and cooldown when email delivery fails', async () => {
-    const store = { findUserByEmail: jest.fn().mockResolvedValue(null) };
-    const cache = {
-      get: jest.fn().mockResolvedValue(null),
-      set: jest.fn().mockResolvedValue(undefined),
-      del: jest.fn().mockResolvedValue(undefined),
-    };
-    const mail = {
-      sendVerificationCode: jest
-        .fn()
-        .mockRejectedValue(
-          new Error('邮箱地址不存在或填写有误，请检查后重试。'),
-        ),
-    };
-    const settings = {
-      isRegistrationEnabled: jest.fn().mockResolvedValue(true),
-      isInviteOnlyRegistrationEnabled: jest.fn().mockResolvedValue(false),
-    };
-    const service = new AuthService(
-      store as never,
-      {} as never,
-      cache as never,
-      mail as never,
-      settings as never,
-    );
-
-    await expect(
-      service.requestRegisterCode('Wrong@Example.com'),
-    ).rejects.toThrow('邮箱地址不存在或填写有误，请检查后重试。');
-    expect(cache.del).toHaveBeenCalledWith('reg-code:wrong@example.com');
-    expect(cache.del).toHaveBeenCalledWith('reg-cooldown:wrong@example.com');
-  });
-
-  it('checks the invite before creating and emailing a registration code', async () => {
-    const store = { findUserByEmail: jest.fn().mockResolvedValue(null) };
-    const cache = {
-      get: jest.fn().mockResolvedValue(null),
-      set: jest.fn().mockResolvedValue(undefined),
-    };
-    const mail = {
-      sendVerificationCode: jest.fn().mockResolvedValue(undefined),
-      isConfigured: jest.fn().mockResolvedValue(true),
-    };
-    const settings = {
-      isRegistrationEnabled: jest.fn().mockResolvedValue(true),
-    };
-    const onboarding = {
-      validateRegistrationInvite: jest.fn().mockResolvedValue(undefined),
-    };
-    const service = new AuthService(
-      store as never,
-      {} as never,
-      cache as never,
-      mail as never,
-      settings as never,
-      onboarding as never,
-    );
-
-    await service.requestRegisterCode('New@Example.com', 'abcdefgh');
-
-    expect(onboarding.validateRegistrationInvite).toHaveBeenCalledWith(
-      'abcdefgh',
-    );
-    expect(mail.sendVerificationCode).toHaveBeenCalledWith(
-      'new@example.com',
-      expect.stringMatching(/^\d{6}$/),
-    );
-  });
-
-  it('does not send a registration code when invite validation fails', async () => {
-    const store = { findUserByEmail: jest.fn().mockResolvedValue(null) };
-    const cache = { get: jest.fn(), set: jest.fn() };
-    const mail = { sendVerificationCode: jest.fn() };
-    const settings = {
-      isRegistrationEnabled: jest.fn().mockResolvedValue(true),
-    };
-    const onboarding = {
-      validateRegistrationInvite: jest
-        .fn()
-        .mockRejectedValue(
-          new BadRequestException('当前仅限邀请注册，请填写邀请码'),
-        ),
-    };
-    const service = new AuthService(
-      store as never,
-      {} as never,
-      cache as never,
-      mail as never,
-      settings as never,
-      onboarding as never,
-    );
-
-    await expect(
-      service.requestRegisterCode('new@example.com'),
-    ).rejects.toThrow('当前仅限邀请注册，请填写邀请码');
-    expect(cache.set).not.toHaveBeenCalled();
-    expect(mail.sendVerificationCode).not.toHaveBeenCalled();
-  });
-
-  it('blocks first-time OAuth registration while existing OAuth users can log in', async () => {
+  it('rejects first-time OAuth login without creating an account', async () => {
     const store = {
       findUserByEmail: jest
         .fn()
@@ -240,16 +140,11 @@ describe('AuthService sessions', () => {
     };
     const jwt = { signAsync: jest.fn().mockResolvedValue('signed-session') };
     const cache = { set: jest.fn().mockResolvedValue(undefined) };
-    const settings = {
-      isRegistrationEnabled: jest.fn().mockResolvedValue(true),
-      isInviteOnlyRegistrationEnabled: jest.fn().mockResolvedValue(true),
-    };
     const service = new AuthService(
       store as never,
       jwt as never,
       cache as never,
       {} as never,
-      settings as never,
     );
 
     await expect(
@@ -257,14 +152,40 @@ describe('AuthService sessions', () => {
         email: 'new@example.com',
         displayName: 'New user',
       }),
-    ).rejects.toThrow('当前仅限邀请注册，请使用邀请码完成邮箱注册');
+    ).rejects.toThrow('该邮箱尚未开通账户，请联系管理员');
+    expect(store.createUser).not.toHaveBeenCalled();
     await expect(
       service.oauthLogin({
         email: 'existing@example.com',
         displayName: 'Existing',
       }),
     ).resolves.toHaveProperty('accessToken', 'signed-session');
-    expect(store.createUser).not.toHaveBeenCalled();
-    expect(settings.isInviteOnlyRegistrationEnabled).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects OAuth login for a non-active existing account', async () => {
+    const store = {
+      findUserByEmail: jest.fn().mockResolvedValue({
+        id: 'user_1',
+        email: 'existing@example.com',
+        displayName: 'Existing',
+        passwordHash: 'unused',
+        role: 'member',
+        status: 'suspended',
+        sessionVersion: 1,
+      }),
+    };
+    const service = new AuthService(
+      store as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.oauthLogin({
+        email: 'existing@example.com',
+        displayName: 'Existing',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

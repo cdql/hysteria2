@@ -644,7 +644,7 @@ export default function PortalPage() {
                   </h2>
                   <p>
                     自 {formatDateTime(overview.user.createdAt)}{" "}
-                    注册以来，我们一直在这里。
+                    开通以来，我们一直在这里。
                   </p>
                 </div>
                 <div className="portal-anniversary-progress">

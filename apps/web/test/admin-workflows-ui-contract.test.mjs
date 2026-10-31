@@ -245,7 +245,7 @@ test("customer list can filter everyone with subscription history", async () => 
 
   assert.match(customers, /曾订阅/);
   assert.match(customers, /subscriptionHistory/);
-  assert.match(customers, /"注册时间"/);
+  assert.match(customers, /"创建时间"/);
   assert.match(customers, /formatDateTime\(customer\.createdAt\)/);
 });
 

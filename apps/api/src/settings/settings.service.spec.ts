@@ -125,8 +125,10 @@ describe('SettingsService cache', () => {
       name: 'Control Plane',
       fontWeight: 550,
       iconStrokeWidth: 2.2,
-      registration: { enabled: true, inviteOnly: false },
     });
+    await expect(service.getSiteInfo()).resolves.not.toHaveProperty(
+      'registration',
+    );
   });
 
   it('falls back to the standard font weight for unsupported stored values', async () => {
@@ -202,7 +204,7 @@ describe('SettingsService cache', () => {
     },
   );
 
-  it('publishes the invite-only registration policy with site info', async () => {
+  it('no longer publishes a registration policy with site info', async () => {
     const prisma = {
       setting: {
         findMany: jest.fn().mockResolvedValue([
@@ -221,9 +223,9 @@ describe('SettingsService cache', () => {
       cache as never,
     );
 
-    await expect(service.getSiteInfo()).resolves.toMatchObject({
-      registration: { enabled: true, inviteOnly: true },
-    });
+    await expect(service.getSiteInfo()).resolves.not.toHaveProperty(
+      'registration',
+    );
   });
 
   it('returns the configured purchase notice with the portal branding', async () => {

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { PrismaClient, type Prisma } from '@prisma/client';
 import {
   HolidayService,
@@ -19,7 +19,6 @@ import { PaymentAttemptLifecycleService } from '../src/payments/payment-attempt-
 import { PrismaService } from '../src/prisma/prisma.service';
 import { postWalletEntry } from '../src/wallet/wallet-ledger';
 import { FinanceService } from '../src/finance/finance.service';
-import { MemberOnboardingService } from '../src/referrals/member-onboarding.service';
 import { grantHolidayInviteDraws } from '../src/holiday/holiday-invite-draws';
 import { refundWalletTopup } from '../src/wallet/wallet-topup';
 import { OrderQueryService } from '../src/orders/order-query.service';
@@ -283,27 +282,43 @@ const url = process.env.HOLIDAY_TEST_DATABASE_URL;
           code: randomUUID().slice(0, 8).toUpperCase(),
         },
       });
-      const onboarding = new MemberOnboardingService(
-        db as PrismaService,
-        {
-          getReferralConfig: () =>
-            Promise.resolve({
-              enabled: true,
-              inviteOnlyRegistration: false,
-              inviterRewardBasisPoints: 0,
-              inviteeRewardBytes: '0',
-            }),
-        } as never,
-      );
-      const member = await onboarding.createEmailMember({
-        email: randomUUID() + '@holiday.test',
-        displayName: 'invited',
-        passwordHash: 'test-only',
-        inviteCode: code.code,
+      // Self-service registration is removed; the e2e fixture creates the
+      // invited member (with its referral attribution) directly instead.
+      const inviteeId = await atomic(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: randomUUID() + '@holiday.test',
+            displayName: 'invited',
+            passwordHash: 'test-only',
+            role: 'MEMBER',
+            status: 'ACTIVE',
+          },
+        });
+        await tx.accessAccount.create({ data: { userId: created.id } });
+        await tx.accessToken.create({
+          data: {
+            userId: created.id,
+            label: 'Primary access token',
+            token: randomBytes(32).toString('base64url'),
+          },
+        });
+        await tx.referralAttribution.create({
+          data: {
+            inviterId,
+            inviteeId: created.id,
+            referralCodeId: code.id,
+            codeSnapshot: code.code,
+            inviterRewardCents: 0,
+            inviterRewardBasisPoints: 0,
+            inviteeRewardBytes: BigInt(0),
+          },
+        });
+        await grantHolidayInviteDraws(tx, created.id);
+        return created.id;
       });
-      return { inviterId, inviteeId: member.userId };
+      return { inviterId, inviteeId };
     }
-    it('grants one at real invite registration and tops up to three once on verified recharge', async () => {
+    it('grants one for an invited member and tops up to three once on verified recharge', async () => {
       await config();
       const { inviterId, inviteeId } = await invitedMember();
       expect((await service.view(inviterId)).drawAvailable).toBe(1);
@@ -611,37 +626,6 @@ const url = process.env.HOLIDAY_TEST_DATABASE_URL;
           admin,
         ),
       ).rejects.toThrow('不可重设');
-    });
-    it('retries simultaneous invited registrations without losing users or issuing extra tickets', async () => {
-      await config();
-      const owner = await user();
-      const code = await db.referralCode.create({
-        data: { ownerId: owner, code: randomUUID().slice(0, 8).toUpperCase() },
-      });
-      const onboarding = new MemberOnboardingService(
-        db as PrismaService,
-        {
-          getReferralConfig: () =>
-            Promise.resolve({
-              enabled: true,
-              inviteOnlyRegistration: false,
-              inviterRewardBasisPoints: 0,
-              inviteeRewardBytes: '0',
-            }),
-        } as never,
-      );
-      const results = await Promise.all(
-        Array.from({ length: 6 }, () =>
-          onboarding.createEmailMember({
-            email: randomUUID() + '@holiday.test',
-            displayName: 'concurrent',
-            passwordHash: 'test-only',
-            inviteCode: code.code,
-          }),
-        ),
-      );
-      expect(new Set(results.map((r) => r.userId)).size).toBe(6);
-      expect((await service.view(owner)).drawAvailable).toBe(6);
     });
     it('compensates verified holiday recharge when principal plus gift exceeds wallet capacity', async () => {
       await config();

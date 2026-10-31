@@ -259,7 +259,7 @@ export default function CustomerDetailPage() {
     }
     if (
       !window.confirm(
-        "确认永久删除该账户？登录、订阅和未使用权益会立即失效，原邮箱可重新注册；历史订单、退款和审计记录将脱敏保留。",
+        "确认永久删除该账户？登录、订阅和未使用权益会立即失效，原邮箱可由管理员重新建档；历史订单、退款和审计记录将脱敏保留。",
       )
     ) {
       return;
@@ -354,7 +354,7 @@ export default function CustomerDetailPage() {
                 {customer.status === "active" ? "正常" : "已停用"}
               </span>
               <span className="badge neutral">
-                注册于 {formatDateTime(customer.createdAt)}
+                创建于 {formatDateTime(customer.createdAt)}
               </span>
             </>
           </div>

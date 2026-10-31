@@ -318,16 +318,6 @@ export class SettingsService {
     };
   }
 
-  /** Open registration defaults to enabled; admins can turn it off. */
-  async isRegistrationEnabled(): Promise<boolean> {
-    const value = await this.get('registration.enabled');
-    return value === undefined ? true : value === 'true';
-  }
-
-  async isInviteOnlyRegistrationEnabled(): Promise<boolean> {
-    return (await this.get('registration.inviteOnly')) === 'true';
-  }
-
   async isReferralEnabled(): Promise<boolean> {
     return (await this.get('referral.enabled')) === 'true';
   }
@@ -352,11 +342,7 @@ export class SettingsService {
             await client.setting.findMany({
               where: {
                 key: {
-                  in: [
-                    'referral.enabled',
-                    'referral.inviterRewardBasisPoints',
-                    'registration.inviteOnly',
-                  ],
+                  in: ['referral.enabled', 'referral.inviterRewardBasisPoints'],
                 },
               },
             })
@@ -369,7 +355,6 @@ export class SettingsService {
     );
     return {
       enabled: values.get('referral.enabled') === 'true',
-      inviteOnlyRegistration: values.get('registration.inviteOnly') === 'true',
       inviterRewardBasisPoints:
         Number.isInteger(rawBasisPoints) &&
         rawBasisPoints >= 0 &&
@@ -718,12 +703,6 @@ export class SettingsService {
           : map.get('site.iconUrl')!,
       fontWeight,
       iconStrokeWidth,
-      registration: {
-        enabled:
-          map.get('registration.enabled') === undefined ||
-          map.get('registration.enabled') === 'true',
-        inviteOnly: map.get('registration.inviteOnly') === 'true',
-      },
     };
   }
 

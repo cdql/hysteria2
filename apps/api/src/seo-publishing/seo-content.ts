@@ -276,7 +276,7 @@ export function buildGeneratedDocument(input: {
         textNode('查看更多使用指南', [
           { type: 'link', attrs: { href: '/blog' } },
         ]),
-        textNode('，或前往注册页面开始使用。'),
+        textNode('，或前往登录页面开始使用。'),
       ],
     },
   );

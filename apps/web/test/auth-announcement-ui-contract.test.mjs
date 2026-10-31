@@ -8,43 +8,33 @@ const source = (path) =>
 test("login exposes the self-service password recovery flow", async () => {
   const [
     login,
-    register,
     experience,
     forgot,
     shell,
     shader,
     styles,
     referralsAdmin,
-    siteProvider,
     copy,
   ] = await Promise.all([
     source("app/login/page.tsx"),
-    source("app/register/page.tsx"),
     source("components/auth-experience.tsx"),
     source("app/forgot-password/page.tsx"),
     source("components/auth-shell.tsx"),
     source("components/auth-shader-background.tsx"),
     source("app/globals.scss"),
     source("app/admin/referrals/page.tsx"),
-    source("components/site-provider.tsx"),
     source("lib/copy.ts"),
   ]);
 
-  assert.match(login, /<AuthExperience initialMode="login"/);
-  assert.match(register, /<AuthExperience initialMode="register"/);
+  assert.match(login, /<AuthExperience \/>/);
+  assert.doesNotMatch(login, /initialMode/);
   assert.match(experience, /忘记密码/);
   assert.match(experience, /\/forgot-password/);
-  assert.match(experience, /window\.history\.pushState/);
-  assert.match(experience, /onModeChange=\{switchMode\}/);
-  assert.match(experience, /className="auth2-optional-region"/);
-  assert.match(experience, /data-open=\{showOptional\}/);
-  assert.match(experience, /inert=\{!showOptional\}/);
-  assert.doesNotMatch(experience, /showOptional \? \(/);
-  assert.match(experience, /选填信息/);
-  assert.match(experience, /邀请码与显示名称/);
+  assert.doesNotMatch(experience, /window\.history\.pushState/);
+  assert.doesNotMatch(experience, /switchMode/);
+  assert.doesNotMatch(experience, /"register"/);
+  assert.doesNotMatch(experience, /auth\/register/);
   assert.match(experience, /auth2-field-stack/);
-  assert.match(experience, /<Icon name="edit" \/>/);
-  assert.doesNotMatch(experience, /<Icon name="add" \/>[\s\S]*?选填信息/);
   assert.match(
     styles,
     /\.auth2-field-stack\s*\{[^}]*display:\s*grid;[^}]*gap:\s*10px;/s,
@@ -70,10 +60,6 @@ test("login exposes the self-service password recovery flow", async () => {
   assert.match(experience, /placeholder="登录密码"/);
   assert.match(
     experience,
-    /cause instanceof ApiError\s*\? cause\.message\s*:\s*"验证码发送失败，请稍后再试。"/,
-  );
-  assert.match(
-    experience,
     /loginSubmitting \? "登录中\.\.\." : "登录"[\s\S]*?<Icon name="login"/,
   );
   const authSubmitStyles = styles.match(
@@ -81,9 +67,10 @@ test("login exposes the self-service password recovery flow", async () => {
   )?.[0];
   assert.ok(authSubmitStyles);
   assert.doesNotMatch(authSubmitStyles, /box-shadow/);
-  assert.match(shell, /role="tab"[\s\S]*?onClick=\{\(\) => onModeChange/);
   assert.match(forgot, /\/api\/auth\/forgot-password/);
-  assert.match(forgot, /如果该邮箱已注册/);
+  assert.match(forgot, /如果该邮箱已开通账户/);
+  assert.doesNotMatch(shell, /\/register/);
+  assert.doesNotMatch(shell, /onModeChange/);
   assert.match(shell, /<AuthShaderBackground/);
   assert.match(shell, /auth2-panel/);
   assert.match(shader, /getContext\("webgl"/);
@@ -92,30 +79,8 @@ test("login exposes the self-service password recovery flow", async () => {
     styles,
     /\.auth2-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1\.12fr\) minmax\(440px, 0\.88fr\);/s,
   );
-  assert.match(siteProvider, /inviteOnly:\s*boolean/);
-  assert.match(experience, /useSite\(\)/);
-  assert.match(
-    experience,
-    /inviteOnlyRegistration && inviteCode\.length !== 8/,
-  );
-  assert.match(
-    experience,
-    /body:\s*\{[\s\S]*?inviteCode: inviteCode \|\| undefined/,
-  );
-  assert.match(experience, /placeholder="8 位邀请码"[\s\S]*?required/);
-  assert.match(experience, /className="auth2-invite-required-notice"/);
-  assert.match(experience, /当前仅限邀请注册/);
-  assert.match(experience, /请填写有效的 8 位邀请码/);
-  assert.match(
-    experience,
-    /mode === "register" && \(inviteOnlyRegistration \|\| inviteCode\)/,
-  );
-  assert.match(referralsAdmin, /封车系统/);
-  assert.match(referralsAdmin, /邀请归因与奖励照常结算/);
-  assert.match(
-    referralsAdmin,
-    /inviteOnlyRegistration: settings\.inviteOnlyRegistration/,
-  );
+  assert.doesNotMatch(referralsAdmin, /封车系统/);
+  assert.doesNotMatch(referralsAdmin, /inviteOnlyRegistration/);
   assert.match(copy, /label: "邀请系统"/);
 });
 
