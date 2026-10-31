@@ -44,6 +44,7 @@ type provisionedUser struct {
 type agent struct {
 	secret           string
 	inboundTag       string
+	defaultFlow      string
 	stats            statscommand.StatsServiceClient
 	handler          proxymancommand.HandlerServiceClient
 	stateFile        string
@@ -100,6 +101,9 @@ func main() {
 	listen := envOr("XRAY_AGENT_LISTEN", "127.0.0.1:9010")
 	xrayAPI := envOr("XRAY_API_ADDRESS", "127.0.0.1:10085")
 	inboundTag := envOr("XRAY_INBOUND_TAG", "vless-reality")
+	// VLESS WS inbounds (plain WebSocket behind Cloudflare Tunnel) must not
+	// carry an XTLS flow; the WS agent instance sets XRAY_DEFAULT_FLOW empty.
+	defaultFlow := envOr("XRAY_DEFAULT_FLOW", "xtls-rprx-vision")
 	stateFile := envOr(
 		"XRAY_AGENT_STATE_FILE",
 		"/var/lib/hysteria2-xray-agent/traffic-batch.json",
@@ -122,8 +126,9 @@ func main() {
 	defer conn.Close()
 
 	a := &agent{
-		secret:     secret,
-		inboundTag: inboundTag,
+		secret:      secret,
+		inboundTag:  inboundTag,
+		defaultFlow: defaultFlow,
 		stats:      statscommand.NewStatsServiceClient(conn),
 		handler:    proxymancommand.NewHandlerServiceClient(conn),
 		stateFile:  stateFile,
@@ -584,7 +589,7 @@ func (a *agent) syncUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if user.Flow == "" {
-			user.Flow = "xtls-rprx-vision"
+			user.Flow = a.defaultFlow
 		}
 		desiredByEmail[user.Email] = user
 	}

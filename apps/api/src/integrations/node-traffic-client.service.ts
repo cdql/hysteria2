@@ -3,11 +3,14 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { createConnection } from 'node:net';
 
+const isXrayProtocol = (protocol: TrafficNode['protocol']) =>
+  protocol === 'vless_reality' || protocol === 'vless_ws';
+
 const REQUEST_TIMEOUT_MS = 10_000;
 
 export interface TrafficNode {
   id: string;
-  protocol: 'hysteria2' | 'vless_reality';
+  protocol: 'hysteria2' | 'vless_reality' | 'vless_ws';
   trafficApiBaseUrl: string;
   trafficApiSecret: string;
   controlApiBaseUrl?: string | null;
@@ -86,7 +89,7 @@ export class NodeTrafficClientService {
       );
       return data;
     } catch (error) {
-      if (node.protocol === 'vless_reality') throw error;
+      if (isXrayProtocol(node.protocol)) throw error;
 
       // Compatibility for Hysteria Traffic Stats API. This is a single
       // read-and-reset call, which avoids the old read/apply/reset gap.
@@ -179,7 +182,7 @@ export class NodeTrafficClientService {
   }
 
   async syncUsers(node: TrafficNode, users: ProvisionedUser[]) {
-    if (node.protocol !== 'vless_reality') {
+    if (!isXrayProtocol(node.protocol)) {
       return { added: 0, removed: 0, total: 0 };
     }
     if (node.trafficApiBaseUrl.startsWith('mock://')) {
@@ -234,7 +237,7 @@ export class NodeTrafficClientService {
     }
     const startedAt = Date.now();
     try {
-      if (node.protocol === 'vless_reality') {
+      if (isXrayProtocol(node.protocol)) {
         await firstValueFrom(
           this.httpService.get(`${node.trafficApiBaseUrl}/health`, {
             headers: { Authorization: node.trafficApiSecret },
@@ -249,10 +252,9 @@ export class NodeTrafficClientService {
           }),
         );
       }
-      const publicEndpointReachable =
-        node.protocol === 'vless_reality'
-          ? await this.probeTcp(node.hostname, node.port)
-          : null;
+      const publicEndpointReachable = isXrayProtocol(node.protocol)
+        ? await this.probeTcp(node.hostname, node.port)
+        : null;
       return {
         agentReachable: true,
         coreHealthy: true,
@@ -305,7 +307,7 @@ export class NodeTrafficClientService {
       ),
     );
     if (
-      node.protocol === 'vless_reality' &&
+      isXrayProtocol(node.protocol) &&
       response.data.sessionRevocation !== 'suxin-session-revoke-v1'
     ) {
       throw new Error(
@@ -316,7 +318,7 @@ export class NodeTrafficClientService {
   }
 
   private runtimeService(node: TrafficNode) {
-    return node.protocol === 'vless_reality'
+    return isXrayProtocol(node.protocol)
       ? ('xray' as const)
       : ('hysteria2' as const);
   }
@@ -330,7 +332,7 @@ export class NodeTrafficClientService {
         secret: explicitSecret,
       };
     }
-    if (node.protocol === 'vless_reality') {
+    if (isXrayProtocol(node.protocol)) {
       return {
         baseUrl: node.trafficApiBaseUrl.replace(/\/$/, ''),
         secret: node.trafficApiSecret,

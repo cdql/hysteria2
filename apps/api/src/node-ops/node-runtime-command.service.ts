@@ -307,7 +307,7 @@ export class NodeRuntimeCommandService {
       });
       if (
         command.action === NodeRuntimeAction.START &&
-        node.protocol === 'vless_reality' &&
+        (node.protocol === 'vless_reality' || node.protocol === 'vless_ws') &&
         node.active &&
         this.usageSync
       ) {

@@ -25,7 +25,7 @@ import {
 } from './portal-membership';
 
 type SubscriptionNode = {
-  protocol: 'HYSTERIA2' | 'VLESS_REALITY';
+  protocol: 'HYSTERIA2' | 'VLESS_REALITY' | 'VLESS_WS';
   hostname: string;
   port: number;
   portHoppingEnabled?: boolean;
@@ -41,6 +41,7 @@ type SubscriptionNode = {
   realityFingerprint: string | null;
   realitySpiderX: string | null;
   vlessFlow: string | null;
+  wsPath?: string | null;
 };
 
 const NODE_HEALTH_FRESHNESS_MS = 3 * 60_000;
@@ -730,8 +731,7 @@ export class PortalService {
     const nodes = bundle.nodes.map((node) => ({
       id: node.id,
       label: node.label,
-      protocol:
-        node.protocol === 'VLESS_REALITY' ? 'vless_reality' : 'hysteria2',
+      protocol: this.presentProtocol(node.protocol),
       uri: this.buildNodeUri(bundle.token, node, nodeDisplayName(node)),
     }));
     const qrCode = await QRCode.toDataURL(uri, {
@@ -770,10 +770,7 @@ export class PortalService {
       mihomoSubscriptionQrCode,
       configSnippet,
       nodeLabel: bundle.node.label,
-      protocol:
-        bundle.node.protocol === 'VLESS_REALITY'
-          ? 'vless_reality'
-          : 'hysteria2',
+      protocol: this.presentProtocol(bundle.node.protocol),
       expiresAt: bundle.subscription.endsAt,
       trafficRemaining: bundle.trafficRemaining,
       nodes,
@@ -896,6 +893,14 @@ export class PortalService {
     };
   }
 
+  private presentProtocol(
+    protocol: SubscriptionNode['protocol'],
+  ): 'hysteria2' | 'vless_reality' | 'vless_ws' {
+    if (protocol === 'VLESS_REALITY') return 'vless_reality';
+    if (protocol === 'VLESS_WS') return 'vless_ws';
+    return 'hysteria2';
+  }
+
   private buildConfigSnippet(
     credential: { token: string; vlessUuid: string },
     node: SubscriptionNode,
@@ -923,6 +928,37 @@ export class PortalService {
                   publicKey: node.realityPublicKey,
                   shortId: node.realityShortId ?? '',
                   spiderX: node.realitySpiderX ?? '',
+                },
+              },
+            },
+          ],
+        },
+        null,
+        2,
+      );
+    }
+
+    if (node.protocol === 'VLESS_WS') {
+      return JSON.stringify(
+        {
+          outbounds: [
+            {
+              protocol: 'vless',
+              settings: {
+                address: node.hostname,
+                port: node.port,
+                id: credential.vlessUuid,
+                encryption: 'none',
+              },
+              streamSettings: {
+                network: 'ws',
+                security: 'tls',
+                tlsSettings: {
+                  serverName: node.sni ?? node.hostname,
+                  fingerprint: 'chrome',
+                },
+                wsSettings: {
+                  path: node.wsPath ?? '/',
                 },
               },
             },
@@ -1104,6 +1140,19 @@ export class PortalService {
       params.set('sid', node.realityShortId ?? '');
       params.set('type', 'tcp');
       if (node.realitySpiderX) params.set('spx', node.realitySpiderX);
+
+      const fragment = label ? `#${encodeURIComponent(label)}` : '';
+      return `vless://${credential.vlessUuid}@${this.formatHost(node.hostname)}:${node.port}?${params.toString()}${fragment}`;
+    }
+
+    if (node.protocol === 'VLESS_WS') {
+      params.set('encryption', 'none');
+      params.set('type', 'ws');
+      params.set('path', node.wsPath ?? '/');
+      // Cloudflare Tunnel terminates TLS at the edge; the local Xray inbound is plain WS.
+      params.set('security', 'tls');
+      params.set('sni', node.sni ?? node.hostname);
+      params.set('fp', 'chrome');
 
       const fragment = label ? `#${encodeURIComponent(label)}` : '';
       return `vless://${credential.vlessUuid}@${this.formatHost(node.hostname)}:${node.port}?${params.toString()}${fragment}`;

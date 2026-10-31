@@ -55,7 +55,11 @@ type DashboardSummary = {
 };
 
 const protocolLabel = (protocol: string) =>
-  protocol === "vless_reality" ? "VLESS Reality" : "Hysteria2";
+  protocol === "vless_reality"
+    ? "VLESS Reality"
+    : protocol === "vless_ws"
+      ? "VLESS WS"
+      : "Hysteria2";
 
 export default function AdminDashboardPage() {
   const { token } = useAuth();

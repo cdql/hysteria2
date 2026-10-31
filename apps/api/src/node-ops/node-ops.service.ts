@@ -150,7 +150,8 @@ export class NodeOpsService {
         controlApiSecretSet: Boolean(node.controlApiSecret),
         runtimeControlConfigured:
           Boolean(node.controlApiBaseUrl && node.controlApiSecret) ||
-          node.protocol === NodeProtocol.VLESS_REALITY,
+          node.protocol === NodeProtocol.VLESS_REALITY ||
+          node.protocol === NodeProtocol.VLESS_WS,
         runtimeState: node.runtimeState.toLowerCase(),
         runtimeStateObservedAt:
           node.runtimeStateObservedAt?.toISOString() ?? null,

@@ -397,7 +397,9 @@ export default function OperationsPage() {
                   node.label,
                   node.protocol === "vless_reality"
                     ? "VLESS + Reality"
-                    : "Hysteria2",
+                    : node.protocol === "vless_ws"
+                      ? "VLESS + WS"
+                      : "Hysteria2",
                   node.lifecycleStatus,
                   <span
                     className={`badge ${node.healthy === true ? "success" : node.healthy === false ? "danger" : "neutral"}`}
@@ -452,7 +454,7 @@ export default function OperationsPage() {
                   key={item.id}
                 />,
                 item.serverName,
-                `${item.protocol === "vless_reality" ? "VLESS + Reality" : "Hysteria2"} · ${item.nodeLabel}`,
+                `${item.protocol === "vless_reality" ? "VLESS + Reality" : item.protocol === "vless_ws" ? "VLESS + WS" : "Hysteria2"} · ${item.nodeLabel}`,
                 item.concurrentClients,
                 formatDateTime(item.observedAt),
                 <button

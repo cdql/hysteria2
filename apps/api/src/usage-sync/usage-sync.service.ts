@@ -128,14 +128,22 @@ export class UsageSyncService {
       await this.store.acknowledgeTrafficBatch(node.id, batch.id);
       await this.nodes.markTrafficSyncSuccess(node.id);
 
-      if (provision && node.protocol === 'vless_reality') {
+      if (
+        provision &&
+        (node.protocol === 'vless_reality' || node.protocol === 'vless_ws')
+      ) {
         const users = await this.entitlements.getNodeProvisioningUsers(node.id);
         await this.nodeClient.syncUsers(
           node,
           users.map((user) => ({
             ...user,
             email: user.userId,
-            flow: node.vlessFlow ?? 'xtls-rprx-vision',
+            // VLESS WS (plain WebSocket behind Cloudflare Tunnel) must not
+            // carry an XTLS flow; the agent leaves an empty flow untouched.
+            flow:
+              node.protocol === 'vless_ws'
+                ? ''
+                : (node.vlessFlow ?? 'xtls-rprx-vision'),
           })),
         );
         provisionedUsers = users.length;

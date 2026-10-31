@@ -1,0 +1,63 @@
+{
+  "api": {
+    "listen": "127.0.0.1:10086",
+    "services": [
+      "HandlerService",
+      "StatsService"
+    ],
+    "tag": "api"
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 13333,
+      "protocol": "vless",
+      "settings": {
+        "decryption": "none",
+        "users": []
+      },
+      "sniffing": {
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "enabled": true,
+        "routeOnly": true
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "acceptProxyProtocol": false,
+          "path": "/REPLACE_WITH_RANDOM_WS_PATH"
+        }
+      },
+      "tag": "vless-ws"
+    }
+  ],
+  "log": {
+    "access": "/var/log/xray-ws/access.log",
+    "loglevel": "warning"
+  },
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
+  ],
+  "policy": {
+    "levels": {
+      "0": {
+        "statsUserDownlink": true,
+        "statsUserOnline": true,
+        "statsUserUplink": true
+      }
+    }
+  },
+  "stats": {}
+}

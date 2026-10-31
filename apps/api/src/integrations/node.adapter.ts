@@ -101,7 +101,7 @@ export class XrayHttpNodeAdapter extends HttpNodeAdapter {
 
   supports(node: TrafficNode) {
     return (
-      node.protocol === 'vless_reality' &&
+      (node.protocol === 'vless_reality' || node.protocol === 'vless_ws') &&
       !node.trafficApiBaseUrl.startsWith('mock://')
     );
   }

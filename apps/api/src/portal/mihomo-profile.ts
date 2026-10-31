@@ -5,7 +5,7 @@ import { nodeDisplayName } from './node-display-name';
 export type MihomoNode = {
   label: string;
   icon?: string | null;
-  protocol: 'HYSTERIA2' | 'VLESS_REALITY';
+  protocol: 'HYSTERIA2' | 'VLESS_REALITY' | 'VLESS_WS';
   hostname: string;
   port: number;
   portHoppingEnabled?: boolean;
@@ -20,6 +20,7 @@ export type MihomoNode = {
   realityShortId: string | null;
   realityFingerprint: string | null;
   vlessFlow: string | null;
+  wsPath?: string | null;
   region?: string | null;
   tags?: string[];
 };
@@ -82,11 +83,7 @@ function providerProxies(
   const aiOnly = scope === 'ai' && nodes.some(isAiNode);
   const proxies = nodes.flatMap((node, index) => {
     if (aiOnly && !isAiNode(node)) return [];
-    return [
-      node.protocol === 'VLESS_REALITY'
-        ? buildVlessProxy(providerNames[index], credential, node)
-        : buildHysteriaProxy(providerNames[index], credential, node),
-    ];
+    return [buildMihomoProxy(providerNames[index], credential, node)];
   });
   return proxies.length
     ? proxies
@@ -210,9 +207,7 @@ export function buildMihomoProfile(
 ) {
   const names = uniqueProxyNames(nodes);
   const proxies = nodes.map((node, index) =>
-    node.protocol === 'VLESS_REALITY'
-      ? buildVlessProxy(names[index], credential, node)
-      : buildHysteriaProxy(names[index], credential, node),
+    buildMihomoProxy(names[index], credential, node),
   );
   const automaticNodes = nodes
     .map((node, index) => ({ node, name: names[index] }))
@@ -351,6 +346,39 @@ function buildHysteriaProxy(
   });
 }
 
+function buildMihomoProxy(
+  name: string,
+  credential: MihomoCredential,
+  node: MihomoNode,
+) {
+  if (node.protocol === 'VLESS_WS') return buildVlessWsProxy(name, credential, node);
+  if (node.protocol === 'VLESS_REALITY')
+    return buildVlessProxy(name, credential, node);
+  return buildHysteriaProxy(name, credential, node);
+}
+
+function buildVlessWsProxy(
+  name: string,
+  credential: MihomoCredential,
+  node: MihomoNode,
+) {
+  return {
+    name,
+    type: 'vless',
+    server: node.hostname,
+    port: node.port,
+    uuid: credential.vlessUuid,
+    network: 'ws',
+    tls: true,
+    udp: true,
+    servername: node.sni ?? node.hostname,
+    'client-fingerprint': 'chrome',
+    'ws-opts': {
+      path: node.wsPath ?? '/',
+    },
+  };
+}
+
 function buildVlessProxy(
   name: string,
   credential: MihomoCredential,
@@ -383,7 +411,11 @@ function uniqueProxyNames(nodes: MihomoNode[]) {
   const used = new Set<string>();
   return nodes.map((node) => {
     const protocol =
-      node.protocol === 'VLESS_REALITY' ? 'VLESS Reality' : 'Hysteria 2';
+      node.protocol === 'VLESS_REALITY'
+        ? 'VLESS Reality'
+        : node.protocol === 'VLESS_WS'
+          ? 'VLESS WS'
+          : 'Hysteria 2';
     const display = nodeDisplayName(node);
     const base = /·\s*(?:Hysteria\s*2|VLESS(?:\s*Reality)?)(?:\s*·|$)/i.test(
       display,

@@ -22,7 +22,7 @@ export interface PresenceQuery extends PageQuery {
   q?: string;
   nodeId?: string;
   serverId?: string;
-  protocol?: 'hysteria2' | 'vless_reality';
+  protocol?: 'hysteria2' | 'vless_reality' | 'vless_ws';
 }
 
 export interface AlertQuery extends PageQuery {

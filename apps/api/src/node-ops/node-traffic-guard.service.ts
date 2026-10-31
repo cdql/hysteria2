@@ -426,6 +426,7 @@ export class NodeTrafficGuardService {
   }) {
     return (
       subject.protocol === NodeProtocol.VLESS_REALITY ||
+      subject.protocol === NodeProtocol.VLESS_WS ||
       Boolean(subject.controlApiBaseUrl && subject.controlApiSecret)
     );
   }

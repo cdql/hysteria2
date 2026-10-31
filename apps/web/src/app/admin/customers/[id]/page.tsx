@@ -639,7 +639,7 @@ export default function CustomerDetailPage() {
                 headers={["服务器", "协议端点", "连接数", "最后在线"]}
                 rows={access.presence.items.map((item) => [
                   item.serverName,
-                  `${item.protocol === "vless_reality" ? "VLESS + Reality" : "Hysteria2"} · ${item.nodeLabel}`,
+                  `${item.protocol === "vless_reality" ? "VLESS + Reality" : item.protocol === "vless_ws" ? "VLESS + WS" : "Hysteria2"} · ${item.nodeLabel}`,
                   item.concurrentClients,
                   formatDateTime(item.observedAt),
                 ])}

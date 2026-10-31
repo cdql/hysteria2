@@ -21,7 +21,7 @@ const runningRuntimeStates = new Set<NodeRuntimeState>([
   NodeRuntimeState.DEACTIVATING,
 ]);
 
-export type NodeProtocolInput = 'hysteria2' | 'vless_reality';
+export type NodeProtocolInput = 'hysteria2' | 'vless_reality' | 'vless_ws';
 
 export interface SaveNodeInput {
   icon?: string;
@@ -43,6 +43,7 @@ export interface SaveNodeInput {
   realityFingerprint?: string;
   realitySpiderX?: string;
   vlessFlow?: string;
+  wsPath?: string;
   trafficApiBaseUrl: string;
   trafficApiSecret: string;
   controlApiBaseUrl?: string;
@@ -146,6 +147,7 @@ export class NodeControlService {
           realityFingerprint: input.realityFingerprint ?? 'chrome',
           realitySpiderX: input.realitySpiderX,
           vlessFlow: input.vlessFlow ?? 'xtls-rprx-vision',
+          wsPath: input.wsPath?.trim() || null,
           trafficApiBaseUrl: input.trafficApiBaseUrl,
           trafficApiSecret: this.cipher.encrypt(input.trafficApiSecret),
           controlApiBaseUrl: input.controlApiBaseUrl?.trim() || null,
@@ -228,6 +230,10 @@ export class NodeControlService {
           realityFingerprint: input.realityFingerprint,
           realitySpiderX: input.realitySpiderX,
           vlessFlow: input.vlessFlow,
+          wsPath:
+            input.wsPath !== undefined
+              ? input.wsPath.trim() || null
+              : undefined,
           trafficApiBaseUrl: input.trafficApiBaseUrl,
           trafficApiSecret: input.trafficApiSecret
             ? this.cipher.encrypt(input.trafficApiSecret)
@@ -395,6 +401,7 @@ export class NodeControlService {
       realityFingerprint: node.realityFingerprint,
       realitySpiderX: node.realitySpiderX,
       vlessFlow: node.vlessFlow,
+      wsPath: node.wsPath,
       trafficApiBaseUrl: node.trafficApiBaseUrl,
       trafficApiSecretSet: Boolean(node.trafficApiSecret),
       controlApiBaseUrl: node.controlApiBaseUrl,
@@ -425,15 +432,15 @@ export class NodeControlService {
   }
 
   private fromDbNodeProtocol(protocol: NodeProtocol): NodeProtocolInput {
-    return protocol === NodeProtocol.VLESS_REALITY
-      ? 'vless_reality'
-      : 'hysteria2';
+    if (protocol === NodeProtocol.VLESS_REALITY) return 'vless_reality';
+    if (protocol === NodeProtocol.VLESS_WS) return 'vless_ws';
+    return 'hysteria2';
   }
 
   private toDbNodeProtocol(protocol: NodeProtocolInput) {
-    return protocol === 'vless_reality'
-      ? NodeProtocol.VLESS_REALITY
-      : NodeProtocol.HYSTERIA2;
+    if (protocol === 'vless_reality') return NodeProtocol.VLESS_REALITY;
+    if (protocol === 'vless_ws') return NodeProtocol.VLESS_WS;
+    return NodeProtocol.HYSTERIA2;
   }
 
   private validateNodeConfiguration(input: {
@@ -446,6 +453,7 @@ export class NodeControlService {
     sni?: string | null;
     realityPublicKey?: string | null;
     realityShortId?: string | null;
+    wsPath?: string | null;
     controlApiBaseUrl?: string | null;
     controlApiSecret?: string | null;
   }) {
@@ -489,6 +497,15 @@ export class NodeControlService {
           'Port hopping interval must be between 5 and 300 seconds',
         );
       }
+    }
+    if (input.protocol === 'vless_ws') {
+      const wsPath = input.wsPath?.trim() ?? '';
+      if (!wsPath.startsWith('/')) {
+        throw new BadRequestException(
+          'VLESS + WS node requires a WebSocket path starting with /',
+        );
+      }
+      return;
     }
     if (input.protocol !== 'vless_reality') return;
     if (!input.sni?.trim()) {

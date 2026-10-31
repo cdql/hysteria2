@@ -21,6 +21,7 @@ enum UserStatus {
 enum NodeProtocol {
   HYSTERIA2
   VLESS_REALITY
+  VLESS_WS
 }
 
 enum SubscriptionStatus {
@@ -661,6 +662,7 @@ model Node {
   realityFingerprint          String?                  @default("chrome")
   realitySpiderX              String?
   vlessFlow                   String?                  @default("xtls-rprx-vision")
+  wsPath                      String?
   trafficApiBaseUrl           String
   trafficApiSecret            String
   controlApiBaseUrl           String?

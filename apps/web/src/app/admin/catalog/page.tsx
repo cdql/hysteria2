@@ -58,7 +58,7 @@ type Product = {
       nodes: Array<{
         id: string;
         label: string;
-        protocol: "hysteria2" | "vless_reality";
+        protocol: "hysteria2" | "vless_reality" | "vless_ws";
         serviceable: boolean;
       }>;
     }>;
@@ -72,7 +72,7 @@ type CatalogServer = {
   nodes: Array<{
     id: string;
     label: string;
-    protocol: "hysteria2" | "vless_reality";
+    protocol: "hysteria2" | "vless_reality" | "vless_ws";
     hostname: string;
     serviceable: boolean;
     exclusiveAccessProfileId?: string | null;
@@ -800,7 +800,9 @@ export default function CatalogPage() {
                         {node.label} ·{" "}
                         {node.protocol === "vless_reality"
                           ? "VLESS + Reality"
-                          : "Hysteria2"}
+                          : node.protocol === "vless_ws"
+                            ? "VLESS + WS"
+                            : "Hysteria2"}
                       </span>
                       <span
                         className={`badge ${node.serviceable ? "success" : "neutral"}`}

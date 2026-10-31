@@ -593,8 +593,8 @@ export class CreateNodeDto {
   icon?: string;
 
   @IsOptional()
-  @IsIn(['hysteria2', 'vless_reality'])
-  protocol?: 'hysteria2' | 'vless_reality';
+  @IsIn(['hysteria2', 'vless_reality', 'vless_ws'])
+  protocol?: 'hysteria2' | 'vless_reality' | 'vless_ws';
 
   @IsOptional()
   @IsString()
@@ -667,6 +667,11 @@ export class CreateNodeDto {
   @IsString()
   vlessFlow?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  wsPath?: string;
+
   @IsString()
   trafficApiBaseUrl!: string;
 
@@ -701,8 +706,8 @@ export class UpdateNodeDto {
   icon?: string;
 
   @IsOptional()
-  @IsIn(['hysteria2', 'vless_reality'])
-  protocol?: 'hysteria2' | 'vless_reality';
+  @IsIn(['hysteria2', 'vless_reality', 'vless_ws'])
+  protocol?: 'hysteria2' | 'vless_reality' | 'vless_ws';
 
   @IsOptional()
   @IsString()
@@ -778,6 +783,11 @@ export class UpdateNodeDto {
   @IsOptional()
   @IsString()
   vlessFlow?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  wsPath?: string;
 
   @IsOptional()
   @IsString()

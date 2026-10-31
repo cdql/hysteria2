@@ -4,7 +4,7 @@ export type SubscriptionStatus = 'active' | 'expired' | 'paused' | 'canceled';
 export type TrafficPackStatus = 'active' | 'exhausted' | 'expired';
 export type ManualOrderStatus = 'pending' | 'applied' | 'void';
 export type ManualOrderKind = 'renewal' | 'traffic_pack' | 'manual_credit';
-export type NodeProtocol = 'hysteria2' | 'vless_reality';
+export type NodeProtocol = 'hysteria2' | 'vless_reality' | 'vless_ws';
 
 export interface User {
   id: string;

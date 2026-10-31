@@ -41,7 +41,7 @@ type Endpoint = {
   icon?: string | null;
   id: string;
   label: string;
-  protocol: "hysteria2" | "vless_reality";
+  protocol: "hysteria2" | "vless_reality" | "vless_ws";
   hostname: string;
   port: number;
   portHoppingEnabled: boolean;
@@ -66,6 +66,7 @@ type Endpoint = {
   allowInsecureTls: boolean;
   realityPublicKey?: string | null;
   realityShortId?: string | null;
+  wsPath?: string | null;
   trafficApiBaseUrl: string;
   trafficApiSecretSet: boolean;
   controlApiBaseUrl?: string | null;
@@ -132,6 +133,7 @@ type NodeForm = {
   sni: string;
   realityPublicKey: string;
   realityShortId: string;
+  wsPath: string;
   trafficApiBaseUrl: string;
   trafficApiSecret: string;
   controlApiBaseUrl: string;
@@ -169,6 +171,7 @@ const emptyNodeForm: NodeForm = {
   sni: "",
   realityPublicKey: "",
   realityShortId: "",
+  wsPath: "",
   trafficApiBaseUrl: "",
   trafficApiSecret: "",
   controlApiBaseUrl: "",
@@ -184,7 +187,11 @@ const emptyTrafficLimitForm: TrafficLimitForm = {
 };
 
 const protocolName = (protocol: Endpoint["protocol"]) =>
-  protocol === "vless_reality" ? "VLESS + Reality" : "Hysteria2";
+  protocol === "vless_reality"
+    ? "VLESS + Reality"
+    : protocol === "vless_ws"
+      ? "VLESS + WS（CF Tunnel）"
+      : "Hysteria2";
 const lifecycleName = (status: Endpoint["lifecycleStatus"]) =>
   ({
     active: "启用",
@@ -513,6 +520,7 @@ export default function NodesPage() {
             sni: node.sni ?? "",
             realityPublicKey: node.realityPublicKey ?? "",
             realityShortId: node.realityShortId ?? "",
+            wsPath: node.wsPath ?? "",
             trafficApiBaseUrl: node.trafficApiBaseUrl,
             trafficApiSecret: "",
             controlApiBaseUrl: node.controlApiBaseUrl ?? "",
@@ -635,6 +643,10 @@ export default function NodesPage() {
             vlessFlow:
               nodeForm.protocol === "vless_reality"
                 ? "xtls-rprx-vision"
+                : undefined,
+            wsPath:
+              nodeForm.protocol === "vless_ws"
+                ? nodeForm.wsPath.trim() || undefined
                 : undefined,
             trafficApiBaseUrl: nodeForm.trafficApiBaseUrl.trim(),
             trafficApiSecret:
@@ -1329,6 +1341,7 @@ export default function NodesPage() {
               }
               options={[
                 { value: "vless_reality", label: "VLESS + Reality" },
+                { value: "vless_ws", label: "VLESS + WS（CF Tunnel）" },
                 { value: "hysteria2", label: "Hysteria2" },
               ]}
             />
@@ -1501,7 +1514,7 @@ export default function NodesPage() {
                 />
               </label>
             </>
-          ) : (
+          ) : nodeForm.protocol === "hysteria2" ? (
             <label className="field">
               <span className="fine-print">混淆密码</span>
               <input
@@ -1515,7 +1528,26 @@ export default function NodesPage() {
                 }
               />
             </label>
-          )}
+          ) : null}
+          {nodeForm.protocol === "vless_ws" ? (
+            <label className="field">
+              <span className="fine-print">
+                WebSocket 路径（需与 Xray WS inbound 一致）
+              </span>
+              <input
+                className="control mono"
+                required
+                placeholder="/ws-xxxx"
+                value={nodeForm.wsPath}
+                onChange={(event) =>
+                  setNodeForm((current) => ({
+                    ...current,
+                    wsPath: event.target.value,
+                  }))
+                }
+              />
+            </label>
+          ) : null}
           <label className="field">
             <span className="fine-print">流量采集地址</span>
             <input

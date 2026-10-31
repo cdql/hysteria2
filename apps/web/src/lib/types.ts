@@ -159,7 +159,7 @@ export interface DestinationTelemetryStatus {
   nodes: Array<{
     id: string;
     label: string;
-    protocol: "hysteria2" | "vless_reality";
+    protocol: "hysteria2" | "vless_reality" | "vless_ws";
     enabled: boolean;
     version?: string | null;
     lastAt?: string | null;
@@ -175,7 +175,7 @@ export interface DestinationVisitRecord {
   userDisplayName: string;
   nodeId: string;
   nodeLabel: string;
-  protocol: "hysteria2" | "vless_reality";
+  protocol: "hysteria2" | "vless_reality" | "vless_ws";
   bucketStart: string;
   target: string;
   targetType: "domain" | "ip";
@@ -219,7 +219,7 @@ export interface PlanBindingRecord {
 export interface NodeRecord {
   id: string;
   serverId?: string | null;
-  protocol: "hysteria2" | "vless_reality";
+  protocol: "hysteria2" | "vless_reality" | "vless_ws";
   label: string;
   hostname: string;
   port: number;
@@ -684,7 +684,7 @@ export interface PortalAccessResponse {
   mihomoSubscriptionQrCode: string;
   configSnippet: string;
   nodeLabel: string;
-  protocol: "hysteria2" | "vless_reality";
+  protocol: "hysteria2" | "vless_reality" | "vless_ws";
   expiresAt: string;
   trafficRemaining: number;
   subscriptionPath: string;
@@ -693,7 +693,7 @@ export interface PortalAccessResponse {
   nodes: Array<{
     id: string;
     label: string;
-    protocol: "hysteria2" | "vless_reality";
+    protocol: "hysteria2" | "vless_reality" | "vless_ws";
     uri: string;
   }>;
 }
