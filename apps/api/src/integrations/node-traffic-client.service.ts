@@ -169,14 +169,14 @@ export class NodeTrafficClientService {
     }
     const target = this.runtimeAgent(node);
     const service = this.runtimeService(node);
+    const url = `${target.baseUrl}/service/status?service=${service}`;
+    // eslint-disable-next-line no-console
+    console.log(`[getServiceStatus] node=${node.id} protocol=${node.protocol} baseUrl=${target.baseUrl} service=${service} url=${url}`);
     const { data } = await firstValueFrom(
-      this.httpService.get<NodeServiceStatus>(
-        `${target.baseUrl}/service/status?service=${service}`,
-        {
-          headers: { Authorization: target.secret },
-          timeout: REQUEST_TIMEOUT_MS,
-        },
-      ),
+      this.httpService.get<NodeServiceStatus>(url, {
+        headers: { Authorization: target.secret },
+        timeout: REQUEST_TIMEOUT_MS,
+      }),
     );
     return data;
   }
