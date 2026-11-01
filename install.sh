@@ -524,7 +524,7 @@ obj['log']={'loglevel':'warning'}
 inbound=obj['inbounds'][0]
 assert inbound['tag']=='vless-ws'
 inbound['port']=int(os.environ['WS_PORT'])
-inbound['streamSettings']['xhttpSettings']['path']=os.environ['WS_PATH']
+inbound['streamSettings']['wsSettings']['path']=os.environ['WS_PATH']
 assert inbound['listen']=='0.0.0.0'
 assert obj['api']['listen']=='127.0.0.1:10086'
 assert inbound['settings']['users']==[]
