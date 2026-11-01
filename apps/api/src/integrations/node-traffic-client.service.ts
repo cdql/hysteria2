@@ -320,8 +320,10 @@ export class NodeTrafficClientService {
   private runtimeService(node: TrafficNode) {
     // VLESS WS uses a dedicated xray-ws instance (separate agent on :9011),
     // so it must query 'xray-ws' instead of 'xray'.
-    if (node.protocol === 'vless_ws') return 'xray-ws' as const;
-    return isXrayProtocol(node.protocol)
+    // (Case-insensitive: DB enum is VLESS_WS, API type is vless_ws.)
+    const protocol = node.protocol?.toLowerCase();
+    if (protocol === 'vless_ws') return 'xray-ws' as const;
+    return protocol === 'vless_reality'
       ? ('xray' as const)
       : ('hysteria2' as const);
   }
