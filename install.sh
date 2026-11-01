@@ -109,8 +109,10 @@ if [[ -f "$STATE_FILE" ]]; then
   [[ -r "$STATE_FILE" ]] || die "无法读取状态文件 $STATE_FILE。"
   # File was only ever written by save_state under root-only /etc/hysteria2.
   # shellcheck disable=SC1090
+  set +u
   source "$STATE_FILE"
-  log "发现上次安装记录，继续执行。面板域名：$PANEL_DOMAIN；管理员：$ADMIN_EMAIL。"
+  set -u
+  log "发现上次安装记录，继续执行。面板域名：${PANEL_DOMAIN:-未知}；管理员：${ADMIN_EMAIL:-未知}。"
 else
   [[ ! -e "$APP_DIR" && ! -e "$STATE_DIR/node.yaml" ]] || die '检测到已有部署但没有本安装器状态文件。为保护数据拒绝覆盖。'
   # 本安装器最后会接管防火墙（nftables 默认 DROP），因此先停掉系统自带的防火墙。
