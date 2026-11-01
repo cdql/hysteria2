@@ -17,11 +17,11 @@
         "users": []
       },
       "streamSettings": {
-        "network": "ws",
+        "network": "xhttp",
         "security": "none",
-        "wsSettings": {
-          "acceptProxyProtocol": false,
-          "path": "/REPLACE_WITH_RANDOM_WS_PATH"
+        "xhttpSettings": {
+          "path": "/REPLACE_WITH_RANDOM_WS_PATH",
+          "mode": "auto"
         }
       },
       "tag": "vless-ws"

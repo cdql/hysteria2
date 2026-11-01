@@ -1147,13 +1147,14 @@ export class PortalService {
 
     if (node.protocol === 'VLESS_WS') {
       params.set('encryption', 'none');
-      params.set('type', 'ws');
-      // Append ?ed=2048 for WebSocket early data (0-RTT), matching common clients.
-      const wsPath = node.wsPath ?? '/';
-      params.set('path', wsPath.includes('?') ? wsPath : `${wsPath}?ed=2048`);
+      // Use XHTTP transport (recommended by Xray for CDN/Cloudflare, replaces deprecated WebSocket).
+      params.set('type', 'xhttp');
+      const xhttpPath = node.wsPath ?? '/';
+      params.set('path', xhttpPath);
+      params.set('mode', 'auto');
       // Host header is required for Cloudflare Tunnel routing.
       params.set('host', node.hostname);
-      // Cloudflare Tunnel terminates TLS at the edge; the local Xray inbound is plain WS.
+      // Cloudflare Tunnel terminates TLS at the edge; the local Xray inbound is plain XHTTP.
       params.set('security', 'tls');
       params.set('sni', node.sni ?? node.hostname);
       params.set('fp', 'chrome');
