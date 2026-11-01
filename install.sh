@@ -355,7 +355,8 @@ EOF
 
 as_app() {
   local dir="$1"; shift
-  runuser -u "$APP_USER" -- env HOME="$APP_DIR" PATH=/usr/local/bin:/usr/bin:/bin ${NODE_OPTIONS:+NODE_OPTIONS="$NODE_OPTIONS"} \
+  # shellcheck disable=SC2086
+  runuser -u "$APP_USER" -- env HOME="$APP_DIR" PATH=/usr/local/bin:/usr/bin:/bin ${NODE_OPTIONS:+NODE_OPTIONS=$NODE_OPTIONS} \
     /bin/bash -c 'cd "$1" && shift && exec "$@"' _ "$dir" "$@"
 }
 
