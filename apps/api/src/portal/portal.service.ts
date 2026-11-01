@@ -1151,7 +1151,7 @@ export class PortalService {
       params.set('type', 'xhttp');
       const xhttpPath = node.wsPath ?? '/';
       params.set('path', xhttpPath);
-      params.set('mode', 'auto');
+      params.set('mode', 'stream-one');
       // Host header is required for Cloudflare Tunnel routing.
       params.set('host', node.hostname);
       // Cloudflare Tunnel terminates TLS at the edge; the local Xray inbound is plain XHTTP.

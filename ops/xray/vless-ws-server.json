@@ -21,7 +21,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/REPLACE_WITH_RANDOM_WS_PATH",
-          "mode": "auto"
+          "mode": "stream-one"
         }
       },
       "tag": "vless-ws"
