@@ -1149,6 +1149,8 @@ export class PortalService {
       params.set('encryption', 'none');
       params.set('type', 'ws');
       params.set('path', node.wsPath ?? '/');
+      // Host header is required for Cloudflare Tunnel routing.
+      params.set('host', node.hostname);
       // Cloudflare Tunnel terminates TLS at the edge; the local Xray inbound is plain WS.
       params.set('security', 'tls');
       params.set('sni', node.sni ?? node.hostname);
