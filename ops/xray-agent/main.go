@@ -580,6 +580,14 @@ func (a *agent) syncUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Safety: ignore empty sync lists to prevent accidental mass removal
+	// (e.g., if the panel has a bug and sends an empty list).
+	if len(desired) == 0 {
+		log.Printf("Ignoring empty user sync list (safety guard)")
+		writeJSON(w, map[string]interface{}{"added": 0, "removed": 0, "total": len(a.users)})
+		return
+	}
+
 	desiredByEmail := make(map[string]provisionedUser, len(desired))
 	for _, user := range desired {
 		user.Email = strings.TrimSpace(user.Email)
