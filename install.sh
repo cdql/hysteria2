@@ -564,10 +564,10 @@ EOFSVC
     sleep 2
   done
   systemctl is-active --quiet xray-ws || { journalctl -u xray-ws -n 40 --no-pager; die 'xray-ws 服务未运行。'; }
-  ss -lnt | grep -q ":$WS_PORT " || die 'VLESS WS 本地监听端口未就绪。'
+  ss -lnt | grep -q ":${WS_PORT} " || die 'VLESS WS 本地监听端口未就绪。'
   # WS 端口由 nftables 防火墙保护（默认 DROP，仅放行必要端口）。
   # 监听 0.0.0.0 是为了与 CF Tunnel 和参考配置一致，防火墙确保外部无法直连。
-  log "VLESS WS 本地节点已就绪：0.0.0.0:$WS_PORT 路径 $WS_PATH（防火墙已限制外部访问）"
+  log "VLESS WS 本地节点已就绪：0.0.0.0:${WS_PORT} 路径 ${WS_PATH}（防火墙已限制外部访问）"
 }
 
 stage_bootstrap() {
@@ -1293,7 +1293,7 @@ final_checks() {
     http://127.0.0.1:9010/health -o /dev/null || die 'REALITY Agent 最终验证失败。'
   curl --noproxy '*' -fsS --max-time 5 -H "Authorization: $XRAY_WS_AGENT_SECRET" \
     http://127.0.0.1:9011/health -o /dev/null || die 'VLESS WS Agent 最终验证失败。'
-  ss -lnt | grep -q ":$WS_PORT " || die 'VLESS WS 本地监听端口未就绪。'
+  ss -lnt | grep -q ":${WS_PORT} " || die 'VLESS WS 本地监听端口未就绪。'
   local realtime_listen
   realtime_listen="$(ss -H -lnt "( sport = :$REALITY_PORT )")" || die '无法检查 REALITY TCP 监听。'
   [[ -n "$realtime_listen" ]] || die 'REALITY TCP 监听失败。'
