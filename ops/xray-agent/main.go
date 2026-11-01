@@ -55,6 +55,9 @@ type agent struct {
 	controlMu        sync.Mutex
 	completed        map[string]completedServiceCommand
 	verifyRevocation func(context.Context) error
+	// configFile, when set, enables direct config-file user management
+	// (bypasses gRPC which is unreliable for some inbounds).
+	configFile       string
 }
 
 type serviceManager interface {
@@ -135,6 +138,11 @@ func main() {
 		services:   services,
 		manager:    systemdServiceManager{},
 		completed:  make(map[string]completedServiceCommand),
+	}
+	// For vless-ws, use direct config file management (gRPC AlterInbound is unreliable).
+	if inboundTag == "vless-ws" {
+		a.configFile = "/etc/xray-ws/config.json"
+		log.Printf("Using config-file user management for %s", a.configFile)
 	}
 	a.verifyRevocation = a.verifyRunningCoreRevocation
 	if err := a.loadPendingBatch(); err != nil {
@@ -588,6 +596,22 @@ func (a *agent) syncUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Config-file mode: write users directly to xray config and restart.
+	// Used for vless-ws where gRPC AlterInbound is unreliable.
+	if a.configFile != "" {
+		if err := a.syncUsersViaConfigFile(desired); err != nil {
+			log.Printf("config-file sync failed: %v", err)
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"added":   len(desired),
+			"removed": 0,
+			"total":   len(desired),
+		})
+		return
+	}
+
 	desiredByEmail := make(map[string]provisionedUser, len(desired))
 	for _, user := range desired {
 		user.Email = strings.TrimSpace(user.Email)
@@ -655,7 +679,95 @@ func (a *agent) syncUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// syncUsersViaConfigFile writes users directly to the xray config file
+// and restarts the service. Used when gRPC AlterInbound is unreliable.
+func (a *agent) syncUsersViaConfigFile(users []provisionedUser) error {
+	data, err := os.ReadFile(a.configFile)
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+	var cfg map[string]interface{}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("parse config: %w", err)
+	}
+	inbounds, ok := cfg["inbounds"].([]interface{})
+	if !ok {
+		return fmt.Errorf("invalid inbounds")
+	}
+	var target map[string]interface{}
+	for _, ib := range inbounds {
+		m, ok := ib.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if tag, _ := m["tag"].(string); tag == a.inboundTag {
+			target = m
+			break
+		}
+	}
+	if target == nil {
+		return fmt.Errorf("inbound %q not found", a.inboundTag)
+	}
+	settings, ok := target["settings"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid settings")
+	}
+	// Build users array: each with id, level, email
+	arr := make([]interface{}, 0, len(users))
+	for _, u := range users {
+		arr = append(arr, map[string]interface{}{
+			"id":    u.ID,
+			"level": 0,
+			"email": u.Email,
+		})
+	}
+	settings["users"] = arr
+	out, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	if err := os.WriteFile(a.configFile, out, 0644); err != nil {
+		return fmt.Errorf("write config: %w", err)
+	}
+	log.Printf("Wrote %d users to %s, restarting xray-ws", len(users), a.configFile)
+	// Restart the xray-ws service to apply changes
+	if err := a.manager.Restart(context.Background(), "xray-ws.service"); err != nil {
+		return fmt.Errorf("restart xray-ws: %w", err)
+	}
+	return nil
+}
+
 func (a *agent) userCount(w http.ResponseWriter, r *http.Request) {
+	// Config-file mode: count users from the config file
+	if a.configFile != "" {
+		data, err := os.ReadFile(a.configFile)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		var cfg map[string]interface{}
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		count := 0
+		if inbounds, ok := cfg["inbounds"].([]interface{}); ok {
+			for _, ib := range inbounds {
+				if m, ok := ib.(map[string]interface{}); ok {
+					if tag, _ := m["tag"].(string); tag == a.inboundTag {
+						if settings, ok := m["settings"].(map[string]interface{}); ok {
+							if users, ok := settings["users"].([]interface{}); ok {
+								count = len(users)
+							}
+						}
+						break
+					}
+				}
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]int{"total": count})
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	result, err := a.handler.GetInboundUsers(
