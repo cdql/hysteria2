@@ -355,7 +355,7 @@ EOF
 
 as_app() {
   local dir="$1"; shift
-  runuser -u "$APP_USER" -- env HOME="$APP_DIR" PATH=/usr/local/bin:/usr/bin:/bin \
+  runuser -u "$APP_USER" -- env HOME="$APP_DIR" PATH=/usr/local/bin:/usr/bin:/bin ${NODE_OPTIONS:+NODE_OPTIONS="$NODE_OPTIONS"} \
     /bin/bash -c 'cd "$1" && shift && exec "$@"' _ "$dir" "$@"
 }
 
@@ -661,8 +661,11 @@ JS
 }
 
 stage_build() {
+  # 构建需要较大堆内存（尤其 Next.js），小内存机器靠 swap 支撑
+  export NODE_OPTIONS="--max-old-space-size=3072"
   as_app "$APP_DIR" /usr/bin/pnpm --filter @hysteria/api build
   as_app "$APP_DIR" /usr/bin/pnpm --filter @hysteria/web build
+  unset NODE_OPTIONS
   [[ -s "$APP_DIR/apps/api/dist/src/main.js" ]] || die 'API dist/src/main.js 缺失。'
   [[ -s "$APP_DIR/apps/api/dist/src/sync-worker.js" ]] || die 'sync-worker 构建产物缺失，拒绝继续。'
   [[ -d "$APP_DIR/apps/web/.next" ]] || die 'Web .next 构建目录缺失。'
