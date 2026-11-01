@@ -272,7 +272,7 @@ stage_repository_db() {
     runuser -u postgres -- psql -v ON_ERROR_STOP=1 -c "CREATE ROLE hysteria2 LOGIN PASSWORD '$DB_PASS'"
   fi
   if ! runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname='hysteria2'" | grep -qx 1; then
-    runuser -u postgres -- createdb -O hysteria2 -E UTF8 -T template0 hysteria2
+    runuser -u postgres -- createdb -O hysteria2 -E UTF8 -T template0 --locale=C.UTF-8 hysteria2
   fi
   if ! id "$APP_USER" >/dev/null 2>&1; then
     useradd --system --user-group --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
