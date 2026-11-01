@@ -101,14 +101,10 @@ export class XrayHttpNodeAdapter extends HttpNodeAdapter {
 
   supports(node: TrafficNode) {
     const protocol = node.protocol?.toLowerCase();
-    const result = (
+    return (
       (protocol === 'vless_reality' || protocol === 'vless_ws') &&
       !node.trafficApiBaseUrl.startsWith('mock://')
     );
-    try {
-      require('fs').appendFileSync('/tmp/status-debug.log', `[${new Date().toISOString()}] XrayAdapter.supports: protocol=${node.protocol} -> ${protocol} result=${result}\n`);
-    } catch {}
-    return result;
   }
 }
 

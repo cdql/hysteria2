@@ -170,10 +170,6 @@ export class NodeTrafficClientService {
     const target = this.runtimeAgent(node);
     const service = this.runtimeService(node);
     const url = `${target.baseUrl}/service/status?service=${service}`;
-    try {
-      // eslint-disable-next-line no-console
-      require('fs').appendFileSync('/tmp/status-debug.log', `[${new Date().toISOString()}] getServiceStatus called: node=${node.id} protocol=${node.protocol} service=${service}\n`);
-    } catch {}
     const { data } = await firstValueFrom(
       this.httpService.get<NodeServiceStatus>(url, {
         headers: { Authorization: target.secret },

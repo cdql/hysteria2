@@ -430,13 +430,6 @@ export class NodeRuntimeCommandService {
   }
 
   private errorMessage(error: unknown) {
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as any;
-      const url = axiosError.config?.url ?? 'unknown-url';
-      const status = axiosError.response?.status ?? 'unknown-status';
-      const data = JSON.stringify(axiosError.response?.data ?? null);
-      return `HTTP ${status} for ${url}: ${data}`.slice(0, 1000);
-    }
     return (error instanceof Error ? error.message : String(error)).slice(
       0,
       1000,
