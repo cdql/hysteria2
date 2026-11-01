@@ -984,6 +984,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 StateDirectory=hysteria2-xray-agent-ws
 ProtectSystem=strict
+ReadWritePaths=/etc/xray-ws/
 ProtectHome=true
 ProtectKernelTunables=true
 ProtectKernelModules=true
