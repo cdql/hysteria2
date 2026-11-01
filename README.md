@@ -120,6 +120,28 @@ ops/
   xray-agent/ Xray 监控与控制代理
 ```
 
+## 一键部署（VPS）
+
+在全新的 Ubuntu/Debian VPS 上，一条命令完成三协议（Hysteria2 + VLESS+REALITY + VLESS WS）部署：
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/cdql/hysteria2/main/install.sh)
+```
+
+脚本会交互式询问面板域名、节点域名、管理员邮箱等信息，自动完成：
+- Hysteria2、Xray、Xray-WS 的安装配置
+- PostgreSQL、Redis、Node.js 环境
+- 面板前后端构建部署
+- Let's Encrypt HTTPS 证书
+- nftables 防火墙（仅开放 22/80/443/8443 TCP + 443 UDP）
+- HY2 和 VLESS+REALITY 节点自动写入面板数据库
+
+VLESS WS（Cloudflare Tunnel）需在部署后手动完成：
+1. 在 Cloudflare Zero Trust 创建 Tunnel，指向 `http://127.0.0.1:<WS端口>`
+2. 在面板节点管理中手动添加 VLESS + WS 节点（协议选「VLESS + WS（CF Tunnel）」）
+
+部署所需的端口、路径、采集密钥等信息保存在 `/root/hysteria2-admin-credentials.txt`（0600 权限）。
+
 ## 快速开始
 
 ### 1. 安装依赖
