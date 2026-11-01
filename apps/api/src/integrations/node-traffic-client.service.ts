@@ -171,7 +171,7 @@ export class NodeTrafficClientService {
     const service = this.runtimeService(node);
     const url = `${target.baseUrl}/service/status?service=${service}`;
     // eslint-disable-next-line no-console
-    console.log(`[getServiceStatus] node=${node.id} protocol=${node.protocol} baseUrl=${target.baseUrl} service=${service} url=${url}`);
+    require('fs').appendFileSync('/tmp/status-debug.log', `[${new Date().toISOString()}] node=${node.id} protocol=${node.protocol} baseUrl=${target.baseUrl} service=${service}\n`);
     const { data } = await firstValueFrom(
       this.httpService.get<NodeServiceStatus>(url, {
         headers: { Authorization: target.secret },
