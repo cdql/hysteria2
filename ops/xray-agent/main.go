@@ -731,7 +731,7 @@ func (a *agent) syncUsersViaConfigFile(users []provisionedUser) error {
 	}
 	log.Printf("Wrote %d users to %s, restarting xray-ws", len(users), a.configFile)
 	// Restart the xray-ws service to apply changes
-	if err := a.manager.Restart(context.Background(), "xray-ws.service"); err != nil {
+	if _, _, _, err := a.manager.control(context.Background(), "xray-ws.service", "restart"); err != nil {
 		return fmt.Errorf("restart xray-ws: %w", err)
 	}
 	return nil
