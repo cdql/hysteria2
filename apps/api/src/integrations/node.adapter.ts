@@ -85,7 +85,7 @@ export class HysteriaNodeAdapter extends HttpNodeAdapter {
 
   supports(node: TrafficNode) {
     return (
-      node.protocol === 'hysteria2' &&
+      node.protocol?.toLowerCase() === 'hysteria2' &&
       !node.trafficApiBaseUrl.startsWith('mock://')
     );
   }
@@ -100,8 +100,9 @@ export class XrayHttpNodeAdapter extends HttpNodeAdapter {
   }
 
   supports(node: TrafficNode) {
+    const protocol = node.protocol?.toLowerCase();
     return (
-      (node.protocol === 'vless_reality' || node.protocol === 'vless_ws') &&
+      (protocol === 'vless_reality' || protocol === 'vless_ws') &&
       !node.trafficApiBaseUrl.startsWith('mock://')
     );
   }
