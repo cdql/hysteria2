@@ -16,15 +16,6 @@
         "decryption": "none",
         "users": []
       },
-      "sniffing": {
-        "destOverride": [
-          "http",
-          "tls",
-          "quic"
-        ],
-        "enabled": true,
-        "routeOnly": true
-      },
       "streamSettings": {
         "network": "ws",
         "security": "none",
