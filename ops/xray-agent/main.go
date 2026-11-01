@@ -584,7 +584,7 @@ func (a *agent) syncUsers(w http.ResponseWriter, r *http.Request) {
 	// (e.g., if the panel has a bug and sends an empty list).
 	if len(desired) == 0 {
 		log.Printf("Ignoring empty user sync list (safety guard)")
-		writeJSON(w, map[string]interface{}{"added": 0, "removed": 0, "total": 0})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"added": 0, "removed": 0, "total": 0})
 		return
 	}
 
