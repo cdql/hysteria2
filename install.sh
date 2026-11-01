@@ -249,13 +249,17 @@ stage_packages() {
 }
 
 stage_swap() {
-  local mem avail
+  local mem avail swap_total
   mem="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
-  if (( mem < 3145728 )) && ! swapon --noheadings --show | grep -q .; then
+  swap_total="$(awk '/SwapTotal:/ {print $2}' /proc/meminfo)"
+  # RAM < 3GiB 且 swap 总量 < 2GiB 时，确保有足够的 swap（构建需要）
+  if (( mem < 3145728 )) && (( swap_total < 2097152 )); then
     avail="$(df -Pk / | awk 'END{print $4}')"
     if (( avail > 6291456 )); then
-      log 'RAM 小于 3GiB，创建 4GiB swap。'
-      if [[ ! -e /swapfile ]]; then fallocate -l 4G /swapfile; fi
+      log 'RAM 小于 3GiB 且 swap 不足，创建/扩容 4GiB swap。'
+      swapoff /swapfile 2>/dev/null || true
+      rm -f /swapfile
+      fallocate -l 4G /swapfile
       chmod 0600 /swapfile
       mkswap /swapfile >/dev/null
       swapon /swapfile
