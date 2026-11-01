@@ -28,7 +28,7 @@ export type NodeRuntimeState =
   | 'failed';
 
 export interface NodeServiceStatus {
-  service: 'xray' | 'hysteria2';
+  service: 'xray' | 'xray-ws' | 'hysteria2';
   status: NodeRuntimeState;
   mainPid: number;
   observedAt: string;
@@ -318,6 +318,9 @@ export class NodeTrafficClientService {
   }
 
   private runtimeService(node: TrafficNode) {
+    // VLESS WS uses a dedicated xray-ws instance (separate agent on :9011),
+    // so it must query 'xray-ws' instead of 'xray'.
+    if (node.protocol === 'vless_ws') return 'xray-ws' as const;
     return isXrayProtocol(node.protocol)
       ? ('xray' as const)
       : ('hysteria2' as const);
