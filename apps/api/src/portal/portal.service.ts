@@ -1148,7 +1148,9 @@ export class PortalService {
     if (node.protocol === 'VLESS_WS') {
       params.set('encryption', 'none');
       params.set('type', 'ws');
-      params.set('path', node.wsPath ?? '/');
+      // Append ?ed=2048 for WebSocket early data (0-RTT), matching common clients.
+      const wsPath = node.wsPath ?? '/';
+      params.set('path', wsPath.includes('?') ? wsPath : `${wsPath}?ed=2048`);
       // Host header is required for Cloudflare Tunnel routing.
       params.set('host', node.hostname);
       // Cloudflare Tunnel terminates TLS at the edge; the local Xray inbound is plain WS.
